@@ -552,21 +552,13 @@ body.is-ready .site-footer {
 	transform: scale(1.04);
 }
 
-.resume-scroll {
-	display: block;
-	width: min(22rem, 100%);
+.resume-embed {
+	width: min(52rem, 100%);
 	margin: 4.5rem auto 0;
-	text-align: center;
 	filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.35));
-	transition: transform 0.5s var(--ease);
 }
 
-.resume-scroll:hover,
-.resume-scroll:focus-visible {
-	transform: translateY(-6px);
-}
-
-.resume-scroll__roll {
+.resume-embed__roll {
 	position: relative;
 	z-index: 2;
 	height: 1.85rem;
@@ -578,46 +570,34 @@ body.is-ready .site-footer {
 	box-shadow: 0 6px 14px rgba(20, 10, 0, 0.4);
 }
 
-.resume-scroll__sheet {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 0.65rem;
-	margin: -0.35rem 1.15rem;
-	padding: 2.1rem 1.4rem 2.3rem;
+.resume-embed__sheet {
+	margin: -0.35rem 0.85rem;
+	padding: 1.15rem 1rem 1.25rem;
 	background:
 		radial-gradient(ellipse at 18% 12%, rgba(255, 236, 200, 0.55), transparent 46%),
 		radial-gradient(ellipse at 80% 88%, rgba(140, 90, 40, 0.18), transparent 42%),
 		linear-gradient(180deg, #ead6b0 0%, #d7bc8e 48%, #c9a978 100%);
-	color: #3d2a16;
 	box-shadow:
 		inset 12px 0 18px -16px rgba(70, 40, 10, 0.45),
 		inset -12px 0 18px -16px rgba(70, 40, 10, 0.45),
 		inset 0 0 40px rgba(90, 50, 15, 0.12);
 }
 
-.resume-scroll__seal {
-	width: 2.4rem;
-	height: 2.4rem;
-	border-radius: 50%;
-	background:
-		radial-gradient(circle at 35% 30%, #c45a4a, #8a2e24 55%, #5c1c16 100%);
-	box-shadow: inset 0 1px 0 rgba(255, 200, 180, 0.35), 0 2px 0 #4a1410;
+.resume-embed__image,
+.resume-embed__frame {
+	display: block;
+	width: 100%;
+	background: #fff;
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-.resume-scroll__title {
-	font-family: var(--font-display);
-	font-size: 2rem;
-	font-weight: 400;
-	line-height: 1;
-	color: #3d2a16;
+.resume-embed__image {
+	height: auto;
 }
 
-.resume-scroll__hint {
-	font-size: 0.82rem;
-	letter-spacing: 0.12em;
-	text-transform: uppercase;
-	color: #7a5a38;
+.resume-embed__frame {
+	height: min(160vh, 72rem);
+	border: 0;
 }
 
 /* --- contact --- */
@@ -1357,6 +1337,10 @@ body.is-ready .site-footer {
 	.photo-arrow {
 		width: 2.4rem;
 		height: 2.4rem;
+	}
+
+	.resume-embed__frame {
+		height: min(140vh, 58rem);
 	}
 
 	.hero {

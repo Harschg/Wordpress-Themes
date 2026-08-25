@@ -140,10 +140,9 @@ function stillframe_customize_register( $wp_customize ) {
 			$wp_customize,
 			'stillframe_resume_id',
 			array(
-				'label'       => __( 'Resume (PDF)', 'stillframe' ),
-				'description' => __( 'Also available in the About page editor. Shows as a scroll on About.', 'stillframe' ),
+				'label'       => __( 'Resume', 'stillframe' ),
+				'description' => __( 'Also available in the About page editor (sidebar). Displays on About.', 'stillframe' ),
 				'section'     => 'stillframe_vibe',
-				'mime_type'   => 'application/pdf',
 			)
 		)
 	);

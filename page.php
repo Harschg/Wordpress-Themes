@@ -22,6 +22,7 @@ get_header();
 			<div class="prose reveal" data-reveal>
 				<?php the_content(); ?>
 			</div>
+			<?php get_template_part( 'template-parts/resume' ); ?>
 		</article>
 	<?php endwhile; ?>
 </main>

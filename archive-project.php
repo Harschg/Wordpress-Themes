@@ -13,10 +13,10 @@ get_header();
 <main id="content" class="site-main">
 	<figure class="projects-hero">
 		<img
-			src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/projects-hero.jpg' ); ?>"
+			src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/projects-hero.jpg?ver=' . STILLFRAME_VERSION ); ?>"
 			alt=""
 			width="1536"
-			height="1024"
+			height="491"
 			decoding="async"
 			fetchpriority="high"
 		/>

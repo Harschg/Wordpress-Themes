@@ -184,37 +184,95 @@ function stillframe_photograph_neighbors( $post_id ) {
 }
 
 /**
- * Public URL for the uploaded resume PDF.
+ * Whether an attachment can be used as the resume.
+ *
+ * @param int $attachment_id Attachment ID.
+ * @return bool
+ */
+function stillframe_is_resume_file( $attachment_id ) {
+	$attachment_id = (int) $attachment_id;
+	if ( ! $attachment_id ) {
+		return false;
+	}
+
+	$mime = (string) get_post_mime_type( $attachment_id );
+	$file = (string) get_attached_file( $attachment_id );
+
+	if ( preg_match( '/\.(pdf|docx?|jpe?g|png|webp)$/i', $file ) ) {
+		return true;
+	}
+
+	if ( false !== strpos( $mime, 'pdf' ) || 0 === strpos( $mime, 'image/' ) ) {
+		return true;
+	}
+
+	return (bool) wp_get_attachment_url( $attachment_id );
+}
+
+/**
+ * Whether this page is the About screen (slug or page template).
  *
  * @param int $page_id Optional page ID. Defaults to the current post.
- * @return string
+ * @return bool
  */
-function stillframe_resume_url( $page_id = 0 ) {
-	$page_id = $page_id ? (int) $page_id : get_the_ID();
+function stillframe_is_about_page( $page_id = 0 ) {
+	$page_id = $page_id ? (int) $page_id : (int) get_the_ID();
+	if ( ! $page_id ) {
+		return false;
+	}
+
+	$slug = get_post_field( 'post_name', $page_id );
+	if ( 'about' === $slug ) {
+		return true;
+	}
+
+	return 'template-about.php' === get_page_template_slug( $page_id );
+}
+
+/**
+ * Attachment ID for the uploaded resume.
+ *
+ * @param int $page_id Optional page ID. Defaults to the current post.
+ * @return int
+ */
+function stillframe_resume_attachment_id( $page_id = 0 ) {
+	$page_id = $page_id ? (int) $page_id : (int) get_the_ID();
 	$ids     = array();
 
 	if ( $page_id ) {
 		$ids[] = (int) get_post_meta( $page_id, 'stillframe_resume_id', true );
 	}
 
-	$ids[] = (int) get_theme_mod( 'stillframe_resume_id', 0 );
+	if ( stillframe_is_about_page( $page_id ) ) {
+		$about = get_page_by_path( 'about' );
+		if ( $about instanceof WP_Post ) {
+			$ids[] = (int) get_post_meta( $about->ID, 'stillframe_resume_id', true );
+		}
+
+		$ids[] = (int) get_theme_mod( 'stillframe_resume_id', 0 );
+	}
+
+	$ids = array_unique( array_filter( $ids ) );
 
 	foreach ( $ids as $attachment_id ) {
-		if ( ! $attachment_id ) {
-			continue;
-		}
-
-		if ( 'application/pdf' !== get_post_mime_type( $attachment_id ) ) {
-			continue;
-		}
-
-		$url = wp_get_attachment_url( $attachment_id );
-		if ( $url ) {
-			return $url;
+		if ( stillframe_is_resume_file( $attachment_id ) && wp_get_attachment_url( $attachment_id ) ) {
+			return $attachment_id;
 		}
 	}
 
-	return '';
+	return 0;
+}
+
+/**
+ * Public URL for the uploaded resume.
+ *
+ * @param int $page_id Optional page ID. Defaults to the current post.
+ * @return string
+ */
+function stillframe_resume_url( $page_id = 0 ) {
+	$attachment_id = stillframe_resume_attachment_id( $page_id );
+
+	return $attachment_id ? (string) wp_get_attachment_url( $attachment_id ) : '';
 }
 
 /**

@@ -150,5 +150,19 @@ function stillframe_register_meta() {
 			)
 		);
 	}
+
+	register_post_meta(
+		'page',
+		'stillframe_resume_id',
+		array(
+			'type'              => 'integer',
+			'single'            => true,
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'absint',
+			'auth_callback'     => function () {
+				return current_user_can( 'edit_pages' );
+			},
+		)
+	);
 }
 add_action( 'init', 'stillframe_register_meta' );
