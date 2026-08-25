@@ -556,6 +556,7 @@ body.is-ready .site-footer {
 .resume-embed {
 	width: min(52rem, 100%);
 	margin: 4.5rem auto 0;
+	overflow: visible;
 	box-shadow: 0 18px 28px rgba(0, 0, 0, 0.35);
 }
 
@@ -605,7 +606,9 @@ body.is-ready .site-footer {
 
 .resume-embed__pages {
 	min-height: 24rem;
+	overflow: visible;
 	color: #1c1814;
+	content-visibility: visible;
 }
 
 .resume-embed__status {
@@ -615,15 +618,21 @@ body.is-ready .site-footer {
 	text-align: center;
 }
 
-.resume-embed__page {
+.resume-embed__pdf-page {
+	background: #fff;
+	content-visibility: visible;
+}
+
+.resume-embed__pdf-page + .resume-embed__pdf-page {
+	border-top: 1px solid #ddd;
+}
+
+.resume-embed__band {
 	display: block;
 	width: 100%;
 	height: auto;
 	background: #fff;
-}
-
-.resume-embed__page + .resume-embed__page {
-	border-top: 1px solid #ddd;
+	content-visibility: visible;
 }
 
 /* --- contact --- */
