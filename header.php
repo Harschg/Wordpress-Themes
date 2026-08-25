@@ -16,9 +16,16 @@ defined( 'ABSPATH' ) || exit;
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 
-<div class="page-transition" aria-hidden="true">
-	<span class="page-transition__mark"><?php bloginfo( 'name' ); ?></span>
+<div class="page-loader" role="status" data-page-loader>
+	<span class="page-loader__spinner" aria-hidden="true"></span>
+	<span class="screen-reader-text"><?php esc_html_e( 'Loading', 'stillframe' ); ?></span>
 </div>
+<noscript>
+	<style>
+		.page-loader { display: none !important; }
+		.site-header, .site-main, .site-footer { opacity: 1 !important; }
+	</style>
+</noscript>
 
 <a class="skip-link" href="#content"><?php esc_html_e( 'Skip to content', 'stillframe' ); ?></a>
 

@@ -13,4 +13,5 @@ require get_template_directory() . '/inc/setup.php';
 require get_template_directory() . '/inc/post-types.php';
 require get_template_directory() . '/inc/meta-boxes.php';
 require get_template_directory() . '/inc/customizer.php';
+require get_template_directory() . '/inc/contact.php';
 require get_template_directory() . '/inc/template-tags.php';

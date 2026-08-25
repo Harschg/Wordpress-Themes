@@ -12,6 +12,8 @@ get_header();
 $location = get_post_meta( get_the_ID(), 'stillframe_location', true );
 $camera   = get_post_meta( get_the_ID(), 'stillframe_camera', true );
 $year     = get_post_meta( get_the_ID(), 'stillframe_year', true );
+$series   = get_the_terms( get_the_ID(), 'photo_series' );
+$series   = ( ! is_wp_error( $series ) && $series ) ? $series : array();
 ?>
 
 <main id="content" class="site-main">
@@ -49,6 +51,24 @@ $year     = get_post_meta( get_the_ID(), 'stillframe_year', true );
 						<div>
 							<dt><?php esc_html_e( 'Year', 'stillframe' ); ?></dt>
 							<dd><?php echo esc_html( $year ); ?></dd>
+						</div>
+					<?php endif; ?>
+					<?php if ( $series ) : ?>
+						<div>
+							<dt><?php esc_html_e( 'Series', 'stillframe' ); ?></dt>
+							<dd>
+								<?php
+								$links = array();
+								foreach ( $series as $term ) {
+									$links[] = sprintf(
+										'<a href="%1$s">%2$s</a>',
+										esc_url( get_term_link( $term ) ),
+										esc_html( $term->name )
+									);
+								}
+								echo implode( ', ', $links ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
+								?>
+							</dd>
 						</div>
 					<?php endif; ?>
 				</dl>

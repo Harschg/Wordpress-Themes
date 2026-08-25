@@ -30,6 +30,12 @@ $cards = array(
 		'copy'   => __( 'Things I have built and shipped.', 'stillframe' ),
 		'url'    => get_post_type_archive_link( 'project' ),
 	),
+	array(
+		'kicker' => __( '04', 'stillframe' ),
+		'title'  => __( 'Contact', 'stillframe' ),
+		'copy'   => __( 'A note, a collab, a hello.', 'stillframe' ),
+		'url'    => stillframe_page_url( 'contact' ),
+	),
 );
 ?>
 

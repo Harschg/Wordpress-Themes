@@ -44,6 +44,10 @@ function stillframe_fallback_menu() {
 			'url'   => get_post_type_archive_link( 'project' ),
 			'label' => __( 'Projects', 'stillframe' ),
 		),
+		array(
+			'url'   => stillframe_page_url( 'contact' ),
+			'label' => __( 'Contact', 'stillframe' ),
+		),
 	);
 
 	echo '<ul class="nav-list">';
@@ -82,7 +86,78 @@ function stillframe_project_stack( $post_id ) {
 }
 
 /**
- * Body class for the loading curtain.
+ * Series terms that currently have photographs.
+ *
+ * @return WP_Term[]
+ */
+function stillframe_photo_series_terms() {
+	$terms = get_terms(
+		array(
+			'taxonomy'   => 'photo_series',
+			'hide_empty' => true,
+			'parent'     => 0,
+		)
+	);
+
+	return is_wp_error( $terms ) ? array() : $terms;
+}
+
+/**
+ * Recent photographs in a series, for card previews.
+ *
+ * @param int $term_id Series term ID.
+ * @param int $count   How many to fetch.
+ * @return WP_Post[]
+ */
+function stillframe_series_preview_photos( $term_id, $count = 3 ) {
+	$posts = get_posts(
+		array(
+			'post_type'      => 'photograph',
+			'posts_per_page' => (int) $count,
+			'no_found_rows'  => true,
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'photo_series',
+					'field'    => 'term_id',
+					'terms'    => (int) $term_id,
+				),
+			),
+		)
+	);
+
+	return $posts;
+}
+
+/**
+ * Keep series photographs off the main gallery grid when series exist.
+ *
+ * @param WP_Query $query Query.
+ */
+function stillframe_gallery_query( $query ) {
+	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+
+	if ( $query->is_post_type_archive( 'photograph' ) && stillframe_photo_series_terms() ) {
+		$query->set(
+			'tax_query',
+			array(
+				array(
+					'taxonomy' => 'photo_series',
+					'operator' => 'NOT EXISTS',
+				),
+			)
+		);
+	}
+
+	if ( $query->is_post_type_archive( 'photograph' ) || $query->is_tax( 'photo_series' ) ) {
+		$query->set( 'posts_per_page', 24 );
+	}
+}
+add_action( 'pre_get_posts', 'stillframe_gallery_query' );
+
+/**
+ * Extra body class for motion styles.
  *
  * @param string[] $classes Body classes.
  * @return string[]
