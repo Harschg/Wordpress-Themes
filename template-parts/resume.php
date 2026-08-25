@@ -1,6 +1,6 @@
 <?php
 /**
- * Resume shown on the page (image or PDF), not a download link.
+ * Resume shown on the page (image or PDF), not a link.
  *
  * @package Stillframe
  */
@@ -22,13 +22,14 @@ $is_image = 0 === strpos( $mime, 'image/' ) || preg_match( '/\.(jpe?g|png|webp|g
 $is_pdf   = false !== strpos( $mime, 'pdf' ) || preg_match( '/\.pdf$/i', $file );
 $is_word  = false !== strpos( $mime, 'word' ) || preg_match( '/\.docx?$/i', $file );
 
+$pdf_src  = add_query_arg( 'stillframe_resume_pdf', (string) get_the_ID(), home_url( '/' ) );
+$pdf_rest = rest_url( 'stillframe/v1/resume/' . get_the_ID() );
+
 if ( $is_word ) {
 	$url = 'https://view.officeapps.live.com/op/embed.aspx?src=' . rawurlencode( $url );
-} elseif ( $is_pdf ) {
-	$url = add_query_arg( 'stillframe_resume', (string) get_the_ID(), home_url( '/' ) );
 }
 ?>
-<section class="resume-embed reveal" data-reveal>
+<section class="resume-embed">
 	<span class="resume-embed__roll resume-embed__roll--top" aria-hidden="true"></span>
 	<div class="resume-embed__sheet">
 		<?php if ( $is_image ) : ?>
@@ -43,6 +44,16 @@ if ( $is_word ) {
 				)
 			);
 			?>
+		<?php elseif ( $is_pdf ) : ?>
+			<div
+				class="resume-embed__pages"
+				data-pdf-file="<?php echo esc_url( $url ); ?>"
+				data-pdf-url="<?php echo esc_url( $pdf_src ); ?>"
+				data-pdf-rest="<?php echo esc_url( $pdf_rest ); ?>"
+				aria-label="<?php echo esc_attr( $alt ); ?>"
+			>
+				<p class="resume-embed__status"><?php esc_html_e( 'Loading resume…', 'stillframe' ); ?></p>
+			</div>
 		<?php else : ?>
 			<iframe
 				class="resume-embed__frame"

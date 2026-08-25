@@ -86,8 +86,56 @@ function stillframe_enqueue_assets() {
 			'homeUrl' => home_url( '/' ),
 		)
 	);
+
+	stillframe_enqueue_resume_pdf();
 }
 add_action( 'wp_enqueue_scripts', 'stillframe_enqueue_assets' );
+
+/**
+ * PDF.js for the on-page resume (avoids the browser's dark PDF viewer).
+ */
+function stillframe_enqueue_resume_pdf() {
+	if ( ! is_singular( 'page' ) ) {
+		return;
+	}
+
+	$attachment_id = stillframe_resume_attachment_id( get_queried_object_id() );
+	if ( ! $attachment_id ) {
+		return;
+	}
+
+	$mime = (string) get_post_mime_type( $attachment_id );
+	$file = (string) get_attached_file( $attachment_id );
+	if ( false === strpos( $mime, 'pdf' ) && ! preg_match( '/\.pdf$/i', $file ) ) {
+		return;
+	}
+
+	$pdfjs = get_template_directory_uri() . '/assets/js/pdfjs';
+
+	wp_enqueue_script(
+		'pdfjs',
+		$pdfjs . '/pdf.min.js',
+		array(),
+		'3.11.174',
+		true
+	);
+
+	wp_enqueue_script(
+		'stillframe-resume-pdf',
+		get_template_directory_uri() . '/assets/js/resume-pdf.js',
+		array( 'pdfjs' ),
+		STILLFRAME_VERSION,
+		true
+	);
+
+	wp_localize_script(
+		'stillframe-resume-pdf',
+		'stillframeResumePdf',
+		array(
+			'workerSrc' => $pdfjs . '/pdf.worker.min.js',
+		)
+	);
+}
 
 /**
  * Preconnect to Google Fonts.

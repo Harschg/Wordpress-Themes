@@ -276,38 +276,141 @@ function stillframe_resume_url( $page_id = 0 ) {
 }
 
 /**
- * Light-page wrapper so the browser PDF viewer does not inherit the dark theme.
+ * Raw PDF bytes for a page's resume, or empty string.
+ *
+ * @param int $page_id Page ID.
+ * @return string
  */
-function stillframe_resume_light_viewer() {
-	if ( ! isset( $_GET['stillframe_resume'] ) ) {
+function stillframe_resume_pdf_bytes( $page_id ) {
+	$attachment_id = stillframe_resume_attachment_id( (int) $page_id );
+	if ( ! $attachment_id ) {
+		return '';
+	}
+
+	$path = (string) get_attached_file( $attachment_id );
+	if ( $path && is_readable( $path ) ) {
+		$bytes = file_get_contents( $path );
+		if ( false !== $bytes && '' !== $bytes ) {
+			return $bytes;
+		}
+	}
+
+	$url = (string) wp_get_attachment_url( $attachment_id );
+	if ( ! $url ) {
+		return '';
+	}
+
+	$response = wp_remote_get(
+		$url,
+		array(
+			'timeout' => 30,
+		)
+	);
+
+	if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+		return '';
+	}
+
+	return (string) wp_remote_retrieve_body( $response );
+}
+
+/**
+ * Byte length that stays correct if mbstring overloads strlen().
+ *
+ * @param string $bytes Binary string.
+ * @return int
+ */
+function stillframe_byte_length( $bytes ) {
+	if ( function_exists( 'mb_strlen' ) ) {
+		return (int) mb_strlen( $bytes, '8bit' );
+	}
+
+	return strlen( $bytes );
+}
+
+/**
+ * Send a PDF with headers that do not truncate or gzip the file.
+ *
+ * @param string $bytes PDF contents.
+ */
+function stillframe_send_pdf_bytes( $bytes ) {
+	while ( ob_get_level() > 0 ) {
+		ob_end_clean();
+	}
+
+	if ( function_exists( 'apache_setenv' ) ) {
+		apache_setenv( 'no-gzip', '1' );
+	}
+	if ( function_exists( 'ini_set' ) ) {
+		ini_set( 'zlib.output_compression', 'Off' );
+	}
+
+	nocache_headers();
+	header( 'Content-Type: application/pdf' );
+	header( 'Content-Disposition: inline; filename="resume.pdf"' );
+	header( 'Content-Length: ' . (string) stillframe_byte_length( $bytes ) );
+	header( 'Accept-Ranges: none' );
+	header( 'Content-Encoding: identity' );
+	header( 'X-Content-Type-Options: nosniff' );
+
+	echo $bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	exit;
+}
+
+/**
+ * Same-origin PDF so the on-page renderer can read the file.
+ */
+function stillframe_resume_pdf_file() {
+	if ( ! isset( $_GET['stillframe_resume_pdf'] ) ) {
 		return;
 	}
 
-	$page_id       = absint( wp_unslash( $_GET['stillframe_resume'] ) );
-	$attachment_id = stillframe_resume_attachment_id( $page_id );
-	$url           = $attachment_id ? (string) wp_get_attachment_url( $attachment_id ) : '';
-
-	if ( ! $url ) {
+	$bytes = stillframe_resume_pdf_bytes( absint( wp_unslash( $_GET['stillframe_resume_pdf'] ) ) );
+	if ( '' === $bytes ) {
 		status_header( 404 );
 		exit;
 	}
 
-	nocache_headers();
-	header( 'Content-Type: text/html; charset=UTF-8' );
-	header( 'X-Frame-Options: SAMEORIGIN' );
-
-	$pdf = esc_url( $url );
-	echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">';
-	echo '<meta name="color-scheme" content="only light">';
-	echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-	echo '<title>Resume</title>';
-	echo '<style>html,body{margin:0;height:100%;background:#fff;color-scheme:only light}embed,iframe,object{display:block;width:100%;height:100%;border:0;background:#fff;color-scheme:only light}</style>';
-	echo '</head><body>';
-	echo '<embed src="' . $pdf . '#view=FitH" type="application/pdf">';
-	echo '</body></html>';
-	exit;
+	stillframe_send_pdf_bytes( $bytes );
 }
-add_action( 'template_redirect', 'stillframe_resume_light_viewer', 0 );
+add_action( 'template_redirect', 'stillframe_resume_pdf_file', 0 );
+
+/**
+ * REST route for the resume PDF.
+ */
+function stillframe_register_resume_rest() {
+	register_rest_route(
+		'stillframe/v1',
+		'/resume/(?P<id>\d+)',
+		array(
+			'methods'             => 'GET',
+			'permission_callback' => '__return_true',
+			'callback'            => 'stillframe_rest_resume_pdf',
+			'args'                => array(
+				'id' => array(
+					'required' => true,
+					'type'     => 'integer',
+				),
+			),
+		)
+	);
+}
+add_action( 'rest_api_init', 'stillframe_register_resume_rest' );
+
+/**
+ * REST callback: stream the resume PDF.
+ *
+ * @param WP_REST_Request $request Request.
+ * @return WP_Error
+ */
+function stillframe_rest_resume_pdf( $request ) {
+	$bytes = stillframe_resume_pdf_bytes( (int) $request['id'] );
+	if ( '' === $bytes ) {
+		return new WP_Error( 'stillframe_resume_missing', __( 'Resume not found.', 'stillframe' ), array( 'status' => 404 ) );
+	}
+
+	stillframe_send_pdf_bytes( $bytes );
+}
 
 /**
  * Keep series photographs off the main gallery grid when series exist.
