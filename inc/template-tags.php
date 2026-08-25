@@ -131,6 +131,59 @@ function stillframe_series_preview_photos( $term_id, $count = 3 ) {
 }
 
 /**
+ * Previous and next photograph IDs, in title order, within the same series
+ * or among ungrouped gallery photos.
+ *
+ * @param int $post_id Current photograph ID.
+ * @return array{prev: int|null, next: int|null}
+ */
+function stillframe_photograph_neighbors( $post_id ) {
+	$post_id = (int) $post_id;
+	$args    = array(
+		'post_type'      => 'photograph',
+		'posts_per_page' => -1,
+		'orderby'        => 'title',
+		'order'          => 'ASC',
+		'fields'         => 'ids',
+		'no_found_rows'  => true,
+	);
+
+	$terms = get_the_terms( $post_id, 'photo_series' );
+
+	if ( $terms && ! is_wp_error( $terms ) ) {
+		$args['tax_query'] = array(
+			array(
+				'taxonomy' => 'photo_series',
+				'field'    => 'term_id',
+				'terms'    => (int) $terms[0]->term_id,
+			),
+		);
+	} else {
+		$args['tax_query'] = array(
+			array(
+				'taxonomy' => 'photo_series',
+				'operator' => 'NOT EXISTS',
+			),
+		);
+	}
+
+	$ids   = array_map( 'intval', get_posts( $args ) );
+	$index = array_search( $post_id, $ids, true );
+
+	if ( false === $index ) {
+		return array(
+			'prev' => null,
+			'next' => null,
+		);
+	}
+
+	return array(
+		'prev' => $index > 0 ? $ids[ $index - 1 ] : null,
+		'next' => ( $index < count( $ids ) - 1 ) ? $ids[ $index + 1 ] : null,
+	);
+}
+
+/**
  * Keep series photographs off the main gallery grid when series exist.
  *
  * @param WP_Query $query Query.

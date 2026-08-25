@@ -15,8 +15,10 @@ get_header();
 		<img
 			src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/projects-hero.jpg' ); ?>"
 			alt=""
-			width="1600"
-			height="900"
+			width="3072"
+			height="2046"
+			decoding="async"
+			fetchpriority="high"
 		/>
 		<figcaption class="projects-hero__caption">
 			<h1 class="archive-header__title"><?php esc_html_e( 'Projects', 'stillframe' ); ?></h1>

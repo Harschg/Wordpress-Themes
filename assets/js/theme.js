@@ -91,4 +91,21 @@
 			nav.classList.toggle("is-open", !open);
 		});
 	}
+
+	var prevPhoto = document.querySelector(".photo-arrow--prev");
+	var nextPhoto = document.querySelector(".photo-arrow--next");
+
+	if (prevPhoto || nextPhoto) {
+		document.addEventListener("keydown", function (event) {
+			if (event.target.closest("input, textarea, select, [contenteditable]")) {
+				return;
+			}
+			if (event.key === "ArrowLeft" && prevPhoto) {
+				window.location.href = prevPhoto.href;
+			}
+			if (event.key === "ArrowRight" && nextPhoto) {
+				window.location.href = nextPhoto.href;
+			}
+		});
+	}
 })();

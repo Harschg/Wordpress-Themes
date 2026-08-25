@@ -9,11 +9,12 @@ defined( 'ABSPATH' ) || exit;
 
 get_header();
 
-$location = get_post_meta( get_the_ID(), 'stillframe_location', true );
-$camera   = get_post_meta( get_the_ID(), 'stillframe_camera', true );
-$year     = get_post_meta( get_the_ID(), 'stillframe_year', true );
-$series   = get_the_terms( get_the_ID(), 'photo_series' );
-$series   = ( ! is_wp_error( $series ) && $series ) ? $series : array();
+$location  = get_post_meta( get_the_ID(), 'stillframe_location', true );
+$camera    = get_post_meta( get_the_ID(), 'stillframe_camera', true );
+$year      = get_post_meta( get_the_ID(), 'stillframe_year', true );
+$series    = get_the_terms( get_the_ID(), 'photo_series' );
+$series    = ( ! is_wp_error( $series ) && $series ) ? $series : array();
+$neighbors = stillframe_photograph_neighbors( get_the_ID() );
 ?>
 
 <main id="content" class="site-main">
@@ -22,11 +23,32 @@ $series   = ( ! is_wp_error( $series ) && $series ) ? $series : array();
 		the_post();
 		?>
 		<article <?php post_class( 'photo-single' ); ?>>
-			<?php if ( has_post_thumbnail() ) : ?>
-				<figure class="photo-single__frame reveal" data-reveal>
+			<figure class="photo-single__frame">
+				<?php if ( has_post_thumbnail() ) : ?>
 					<?php the_post_thumbnail( 'stillframe-hero', array( 'class' => 'photo-single__image' ) ); ?>
-				</figure>
-			<?php endif; ?>
+				<?php endif; ?>
+
+				<?php if ( $neighbors['prev'] || $neighbors['next'] ) : ?>
+					<nav class="photo-arrows" aria-label="<?php esc_attr_e( 'Photos', 'stillframe' ); ?>">
+						<?php if ( $neighbors['prev'] ) : ?>
+							<a class="photo-arrow photo-arrow--prev" href="<?php echo esc_url( get_permalink( $neighbors['prev'] ) ); ?>">
+								<span class="screen-reader-text"><?php esc_html_e( 'Previous photo', 'stillframe' ); ?></span>
+								<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+									<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</a>
+						<?php endif; ?>
+						<?php if ( $neighbors['next'] ) : ?>
+							<a class="photo-arrow photo-arrow--next" href="<?php echo esc_url( get_permalink( $neighbors['next'] ) ); ?>">
+								<span class="screen-reader-text"><?php esc_html_e( 'Next photo', 'stillframe' ); ?></span>
+								<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+									<path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</a>
+						<?php endif; ?>
+					</nav>
+				<?php endif; ?>
+			</figure>
 
 			<div class="photo-single__meta page-shell">
 				<header class="reveal" data-reveal>
@@ -77,17 +99,6 @@ $series   = ( ! is_wp_error( $series ) && $series ) ? $series : array();
 						<?php the_content(); ?>
 					</div>
 				<?php endif; ?>
-
-				<nav class="photo-nav reveal" data-reveal>
-					<?php
-					the_post_navigation(
-						array(
-							'prev_text' => '<span class="photo-nav__label">' . esc_html__( 'Earlier', 'stillframe' ) . '</span><span class="photo-nav__title">%title</span>',
-							'next_text' => '<span class="photo-nav__label">' . esc_html__( 'Later', 'stillframe' ) . '</span><span class="photo-nav__title">%title</span>',
-						)
-					);
-					?>
-				</nav>
 			</div>
 		</article>
 	<?php endwhile; ?>
