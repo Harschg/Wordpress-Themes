@@ -10,7 +10,8 @@ defined( 'ABSPATH' ) || exit;
 get_header();
 
 $status   = isset( $_GET['contact'] ) ? sanitize_key( wp_unslash( $_GET['contact'] ) ) : '';
-$email    = get_theme_mod( 'stillframe_contact_email', get_option( 'admin_email' ) );
+$email     = get_theme_mod( 'stillframe_contact_email', get_option( 'admin_email' ) );
+$linkedin  = get_theme_mod( 'stillframe_linkedin', 'https://www.linkedin.com/in/grant-harsch' );
 $instagram = get_theme_mod( 'stillframe_instagram', '' );
 $github    = get_theme_mod( 'stillframe_github', '' );
 ?>
@@ -35,6 +36,12 @@ $github    = get_theme_mod( 'stillframe_github', '' );
 							<li>
 								<span><?php esc_html_e( 'Email', 'stillframe' ); ?></span>
 								<a href="<?php echo esc_url( 'mailto:' . $email ); ?>"><?php echo esc_html( $email ); ?></a>
+							</li>
+						<?php endif; ?>
+						<?php if ( $linkedin ) : ?>
+							<li>
+								<span><?php esc_html_e( 'LinkedIn', 'stillframe' ); ?></span>
+								<a href="<?php echo esc_url( $linkedin ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( preg_replace( '#^https?://(www\.)?#i', '', $linkedin ) ); ?></a>
 							</li>
 						<?php endif; ?>
 						<?php if ( $instagram ) : ?>

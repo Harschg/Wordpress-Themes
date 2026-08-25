@@ -77,6 +77,23 @@ function stillframe_customize_register( $wp_customize ) {
 	);
 
 	$wp_customize->add_setting(
+		'stillframe_linkedin',
+		array(
+			'default'           => 'https://www.linkedin.com/in/grant-harsch',
+			'sanitize_callback' => 'esc_url_raw',
+		)
+	);
+
+	$wp_customize->add_control(
+		'stillframe_linkedin',
+		array(
+			'label'   => __( 'LinkedIn URL', 'stillframe' ),
+			'section' => 'stillframe_vibe',
+			'type'    => 'url',
+		)
+	);
+
+	$wp_customize->add_setting(
 		'stillframe_instagram',
 		array(
 			'default'           => '',
