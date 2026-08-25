@@ -1,21 +1,106 @@
 /* Stillframe — dusk, slow, photographic. */
 
 :root {
-	--bg: #12110f;
-	--bg-elev: #1b1916;
-	--bg-card: #221f1b;
-	--text: #ece6da;
-	--muted: #9c9488;
-	--line: rgba(236, 230, 218, 0.12);
-	--accent: #c9a36a;
-	--accent-soft: #e0c49a;
-	--shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+	--bg: #141210;
+	--bg-elev: #1c1a17;
+	--bg-card: #23201c;
+	--bg-hover: #2a2621;
+	--bg-input: #181614;
+	--text: #e9e4db;
+	--muted: #9a9389;
+	--line: rgba(233, 228, 219, 0.1);
+	--accent: #c4a373;
+	--accent-soft: #d8c4a4;
+	--ink: #1c1814;
+	--wash-a: rgba(196, 163, 115, 0.1);
+	--wash-b: rgba(72, 56, 40, 0.16);
+	--shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 	--font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
 	--font-body: "Outfit", system-ui, sans-serif;
 	--ease: cubic-bezier(0.22, 1, 0.36, 1);
 	--header: 4.5rem;
 	--page: min(1120px, calc(100% - 3rem));
 	--page-wide: min(1280px, calc(100% - 2.5rem));
+}
+
+/* About — warm clay, indoor afternoon. */
+.vibe-about {
+	--bg: #161210;
+	--bg-elev: #1f1a17;
+	--bg-card: #261f1b;
+	--bg-hover: #2e2621;
+	--bg-input: #1a1614;
+	--text: #ebe5de;
+	--muted: #9e9288;
+	--line: rgba(235, 229, 222, 0.1);
+	--accent: #c2a090;
+	--accent-soft: #d8c3b6;
+	--wash-a: rgba(194, 160, 144, 0.11);
+	--wash-b: rgba(78, 50, 40, 0.14);
+}
+
+/* Gallery — cool dusk, darkroom quiet. */
+.vibe-gallery {
+	--bg: #111318;
+	--bg-elev: #181b21;
+	--bg-card: #1e2229;
+	--bg-hover: #262b33;
+	--bg-input: #15181d;
+	--text: #e4e7ec;
+	--muted: #8e96a0;
+	--line: rgba(228, 231, 236, 0.1);
+	--accent: #9aafc0;
+	--accent-soft: #c3ced8;
+	--wash-a: rgba(122, 148, 172, 0.1);
+	--wash-b: rgba(36, 48, 66, 0.2);
+}
+
+/* Projects — sage studio. */
+.vibe-projects {
+	--bg: #121411;
+	--bg-elev: #191c18;
+	--bg-card: #20241e;
+	--bg-hover: #272c25;
+	--bg-input: #161914;
+	--text: #e5e9e2;
+	--muted: #90988c;
+	--line: rgba(229, 233, 226, 0.1);
+	--accent: #a3b396;
+	--accent-soft: #c4d0bb;
+	--wash-a: rgba(140, 160, 130, 0.1);
+	--wash-b: rgba(40, 54, 40, 0.16);
+}
+
+/* Contact — dusk rose. */
+.vibe-contact {
+	--bg: #151214;
+	--bg-elev: #1d191c;
+	--bg-card: #251f23;
+	--bg-hover: #2d262a;
+	--bg-input: #191516;
+	--text: #ebe5e7;
+	--muted: #9c9196;
+	--line: rgba(235, 229, 231, 0.1);
+	--accent: #c4a4aa;
+	--accent-soft: #d9c4c8;
+	--wash-a: rgba(196, 164, 170, 0.1);
+	--wash-b: rgba(70, 44, 54, 0.15);
+}
+
+/* 404 — a little dimmer, still home. */
+.vibe-lost {
+	--bg: #121110;
+	--bg-elev: #1a1917;
+	--bg-card: #211f1c;
+	--bg-hover: #292622;
+	--bg-input: #161513;
+	--text: #e4dfd6;
+	--muted: #938c83;
+	--line: rgba(228, 223, 214, 0.1);
+	--accent: #b9a48a;
+	--accent-soft: #d0c0aa;
+	--wash-a: rgba(160, 140, 115, 0.08);
+	--wash-b: rgba(40, 36, 32, 0.2);
 }
 
 *,
@@ -26,13 +111,13 @@
 
 html {
 	scroll-behavior: smooth;
+	background: var(--bg);
 }
 
 html,
 body {
 	margin: 0;
 	min-height: 100%;
-	background: var(--bg);
 	color: var(--text);
 	font-family: var(--font-body);
 	font-weight: 300;
@@ -42,16 +127,11 @@ body {
 
 body {
 	position: relative;
-}
-
-body::before {
-	content: "";
-	pointer-events: none;
-	position: fixed;
-	inset: 0;
-	z-index: 8;
-	opacity: 0.06;
-	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	background-color: var(--bg);
+	background-image:
+		radial-gradient(ellipse 90% 55% at 50% -15%, var(--wash-a), transparent 62%),
+		radial-gradient(ellipse 70% 50% at 100% 110%, var(--wash-b), transparent 58%);
+	background-attachment: fixed;
 }
 
 img {
@@ -91,7 +171,7 @@ button {
 	height: auto;
 	padding: 0.6rem 1rem;
 	background: var(--accent);
-	color: #1a140c;
+	color: var(--ink);
 }
 
 /* --- page loader --- */
@@ -146,8 +226,9 @@ body.is-ready .site-footer {
 	position: sticky;
 	top: 0;
 	z-index: 20;
-	backdrop-filter: blur(16px);
-	background: rgba(18, 17, 15, 0.72);
+	backdrop-filter: blur(18px);
+	background: var(--bg);
+	background: color-mix(in srgb, var(--bg) 72%, transparent);
 	border-bottom: 1px solid var(--line);
 }
 
@@ -352,7 +433,7 @@ body.is-ready .site-footer {
 .directory-card:focus-visible {
 	transform: translateY(-4px);
 	border-color: rgba(201, 163, 106, 0.45);
-	background: #2a261f;
+	background: var(--bg-hover);
 }
 
 .directory-card:hover::before,
@@ -409,7 +490,7 @@ body.is-ready .site-footer {
 	padding: 0.85rem 1.4rem;
 	border: 1px solid var(--accent);
 	background: var(--accent);
-	color: #1a140c;
+	color: var(--ink);
 	border-radius: 2px;
 	font-size: 0.78rem;
 	letter-spacing: 0.16em;
@@ -589,7 +670,7 @@ body.is-ready .site-footer {
 	padding: 0.85rem 0.9rem;
 	border: 1px solid var(--line);
 	border-radius: 2px;
-	background: #161412;
+	background: var(--bg-input);
 	color: var(--text);
 	font: inherit;
 	transition: border-color 0.35s var(--ease), box-shadow 0.35s var(--ease), transform 0.35s var(--ease);
@@ -636,8 +717,8 @@ body.is-ready .site-footer {
 }
 
 .contact-banner--err {
-	border-color: rgba(196, 120, 90, 0.5);
-	color: #e0b8a4;
+	border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+	color: var(--accent-soft);
 }
 
 @keyframes banner-in {
@@ -714,7 +795,7 @@ body.is-ready .site-footer {
 
 .series-card__frames {
 	position: relative;
-	background: #161412;
+	background: var(--bg-input);
 }
 
 .series-card__image,
@@ -727,7 +808,7 @@ body.is-ready .site-footer {
 }
 
 .series-card__empty {
-	background: linear-gradient(160deg, #2a261f, #161412);
+	background: linear-gradient(160deg, var(--bg-hover), var(--bg-input));
 }
 
 .series-card__image:nth-child(1) {
@@ -821,7 +902,7 @@ body.is-ready .site-footer {
 }
 
 .photo-card__media--empty {
-	background: linear-gradient(160deg, #2a261f, #161412);
+	background: linear-gradient(160deg, var(--bg-hover), var(--bg-input));
 }
 
 .photo-card__image {
@@ -1023,7 +1104,7 @@ body.is-ready .site-footer {
 .prose {
 	max-width: 42rem;
 	font-size: 1.05rem;
-	color: #d8d1c4;
+	color: var(--text);
 }
 
 .prose > *:first-child {
@@ -1118,6 +1199,10 @@ body.is-ready .site-footer {
 /* --- mobile --- */
 
 @media (max-width: 860px) {
+	body {
+		background-attachment: scroll;
+	}
+
 	.nav-toggle {
 		display: grid;
 		place-items: center;
@@ -1129,7 +1214,8 @@ body.is-ready .site-footer {
 		left: 0;
 		right: 0;
 		padding: 0.5rem 1.25rem 1.25rem;
-		background: rgba(18, 17, 15, 0.96);
+		background: var(--bg);
+		background: color-mix(in srgb, var(--bg) 94%, transparent);
 		border-bottom: 1px solid var(--line);
 		transform: translateY(-0.5rem);
 		opacity: 0;
@@ -1206,9 +1292,5 @@ body.is-ready .site-footer {
 	.reveal {
 		opacity: 1;
 		transform: none;
-	}
-
-	body::before {
-		display: none;
 	}
 }

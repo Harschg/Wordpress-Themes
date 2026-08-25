@@ -16,7 +16,7 @@ $location = get_post_meta( get_the_ID(), 'stillframe_location', true );
 $tall     = 0 === $index % 3;
 ?>
 
-<article <?php post_class( 'photo-card reveal' ); ?> data-reveal data-stagger="<?php echo esc_attr( (string) min( $index, 8 ) ); ?>">
+<article <?php post_class( 'photo-card' ); ?>>
 	<a class="photo-card__link" href="<?php the_permalink(); ?>">
 		<?php if ( has_post_thumbnail() ) : ?>
 			<div class="photo-card__media <?php echo $tall ? 'photo-card__media--tall' : ''; ?>">
@@ -25,7 +25,7 @@ $tall     = 0 === $index % 3;
 					'stillframe-gallery',
 					array(
 						'class'    => 'photo-card__image',
-						'loading'  => 'lazy',
+						'loading'  => 'eager',
 						'alt'      => the_title_attribute( array( 'echo' => false ) ),
 					)
 				);

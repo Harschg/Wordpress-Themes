@@ -165,6 +165,22 @@ add_action( 'pre_get_posts', 'stillframe_gallery_query' );
 function stillframe_body_class( $classes ) {
 	$classes[] = 'has-page-motion';
 
+	if ( is_front_page() ) {
+		$classes[] = 'vibe-home';
+	} elseif ( is_page( 'about' ) || is_page_template( 'template-about.php' ) ) {
+		$classes[] = 'vibe-about';
+	} elseif ( is_page( 'contact' ) || is_page_template( 'template-contact.php' ) ) {
+		$classes[] = 'vibe-contact';
+	} elseif ( is_post_type_archive( 'photograph' ) || is_tax( 'photo_series' ) || is_singular( 'photograph' ) ) {
+		$classes[] = 'vibe-gallery';
+	} elseif ( is_post_type_archive( 'project' ) || is_singular( 'project' ) ) {
+		$classes[] = 'vibe-projects';
+	} elseif ( is_404() ) {
+		$classes[] = 'vibe-lost';
+	} else {
+		$classes[] = 'vibe-home';
+	}
+
 	return $classes;
 }
 add_filter( 'body_class', 'stillframe_body_class' );
