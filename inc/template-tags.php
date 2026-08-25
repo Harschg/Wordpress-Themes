@@ -184,6 +184,40 @@ function stillframe_photograph_neighbors( $post_id ) {
 }
 
 /**
+ * Public URL for the uploaded resume PDF.
+ *
+ * @param int $page_id Optional page ID. Defaults to the current post.
+ * @return string
+ */
+function stillframe_resume_url( $page_id = 0 ) {
+	$page_id = $page_id ? (int) $page_id : get_the_ID();
+	$ids     = array();
+
+	if ( $page_id ) {
+		$ids[] = (int) get_post_meta( $page_id, 'stillframe_resume_id', true );
+	}
+
+	$ids[] = (int) get_theme_mod( 'stillframe_resume_id', 0 );
+
+	foreach ( $ids as $attachment_id ) {
+		if ( ! $attachment_id ) {
+			continue;
+		}
+
+		if ( 'application/pdf' !== get_post_mime_type( $attachment_id ) ) {
+			continue;
+		}
+
+		$url = wp_get_attachment_url( $attachment_id );
+		if ( $url ) {
+			return $url;
+		}
+	}
+
+	return '';
+}
+
+/**
  * Keep series photographs off the main gallery grid when series exist.
  *
  * @param WP_Query $query Query.

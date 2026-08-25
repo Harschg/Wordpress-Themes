@@ -15,8 +15,8 @@ get_header();
 		<img
 			src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/projects-hero.jpg' ); ?>"
 			alt=""
-			width="3072"
-			height="2046"
+			width="1536"
+			height="1024"
 			decoding="async"
 			fetchpriority="high"
 		/>

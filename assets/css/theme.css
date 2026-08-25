@@ -552,6 +552,74 @@ body.is-ready .site-footer {
 	transform: scale(1.04);
 }
 
+.resume-scroll {
+	display: block;
+	width: min(22rem, 100%);
+	margin: 4.5rem auto 0;
+	text-align: center;
+	filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.35));
+	transition: transform 0.5s var(--ease);
+}
+
+.resume-scroll:hover,
+.resume-scroll:focus-visible {
+	transform: translateY(-6px);
+}
+
+.resume-scroll__roll {
+	position: relative;
+	z-index: 2;
+	height: 1.85rem;
+	border-radius: 999px;
+	background:
+		radial-gradient(circle at 8% 50%, #c4a06a 0 0.28rem, transparent 0.3rem),
+		radial-gradient(circle at 92% 50%, #c4a06a 0 0.28rem, transparent 0.3rem),
+		linear-gradient(180deg, #8a6238 0%, #5c3d22 42%, #2f1e12 50%, #6a4728 100%);
+	box-shadow: 0 6px 14px rgba(20, 10, 0, 0.4);
+}
+
+.resume-scroll__sheet {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.65rem;
+	margin: -0.35rem 1.15rem;
+	padding: 2.1rem 1.4rem 2.3rem;
+	background:
+		radial-gradient(ellipse at 18% 12%, rgba(255, 236, 200, 0.55), transparent 46%),
+		radial-gradient(ellipse at 80% 88%, rgba(140, 90, 40, 0.18), transparent 42%),
+		linear-gradient(180deg, #ead6b0 0%, #d7bc8e 48%, #c9a978 100%);
+	color: #3d2a16;
+	box-shadow:
+		inset 12px 0 18px -16px rgba(70, 40, 10, 0.45),
+		inset -12px 0 18px -16px rgba(70, 40, 10, 0.45),
+		inset 0 0 40px rgba(90, 50, 15, 0.12);
+}
+
+.resume-scroll__seal {
+	width: 2.4rem;
+	height: 2.4rem;
+	border-radius: 50%;
+	background:
+		radial-gradient(circle at 35% 30%, #c45a4a, #8a2e24 55%, #5c1c16 100%);
+	box-shadow: inset 0 1px 0 rgba(255, 200, 180, 0.35), 0 2px 0 #4a1410;
+}
+
+.resume-scroll__title {
+	font-family: var(--font-display);
+	font-size: 2rem;
+	font-weight: 400;
+	line-height: 1;
+	color: #3d2a16;
+}
+
+.resume-scroll__hint {
+	font-size: 0.82rem;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: #7a5a38;
+}
+
 /* --- contact --- */
 
 .contact {
@@ -986,17 +1054,17 @@ body.is-ready .site-footer {
 
 .projects-hero {
 	position: relative;
-	margin: 0 0 3rem;
+	width: var(--page-wide);
+	margin: 0 auto 3rem;
 	overflow: hidden;
 	background: var(--bg-card);
+	border-radius: 2px;
 }
 
 .projects-hero img {
 	display: block;
 	width: 100%;
-	height: min(68vh, 720px);
-	object-fit: cover;
-	object-position: center 42%;
+	height: auto;
 }
 
 .projects-hero__caption {

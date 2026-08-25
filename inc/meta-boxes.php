@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Register meta boxes.
  */
-function stillframe_add_meta_boxes() {
+function stillframe_add_meta_boxes( $post_type, $post ) {
 	add_meta_box(
 		'stillframe_photograph_details',
 		__( 'Photograph details', 'stillframe' ),
@@ -29,8 +29,24 @@ function stillframe_add_meta_boxes() {
 		'side',
 		'high'
 	);
+
+	$is_about = $post instanceof WP_Post && 'page' === $post_type && (
+		'about' === $post->post_name ||
+		'template-about.php' === get_page_template_slug( $post )
+	);
+
+	if ( $is_about ) {
+		add_meta_box(
+			'stillframe_resume',
+			__( 'Resume', 'stillframe' ),
+			'stillframe_render_resume_meta_box',
+			'page',
+			'side',
+			'high'
+		);
+	}
 }
-add_action( 'add_meta_boxes', 'stillframe_add_meta_boxes' );
+add_action( 'add_meta_boxes', 'stillframe_add_meta_boxes', 10, 2 );
 
 /**
  * Photograph meta box markup.
@@ -143,3 +159,90 @@ function stillframe_save_project_meta( $post_id ) {
 	}
 }
 add_action( 'save_post_project', 'stillframe_save_project_meta' );
+
+/**
+ * Resume upload on pages (used on About).
+ *
+ * @param WP_Post $post Current post.
+ */
+function stillframe_render_resume_meta_box( $post ) {
+	wp_nonce_field( 'stillframe_save_resume', 'stillframe_resume_nonce' );
+
+	$resume_id = (int) get_post_meta( $post->ID, 'stillframe_resume_id', true );
+	$file      = $resume_id ? get_post( $resume_id ) : null;
+	$filename  = ( $file instanceof WP_Post ) ? $file->post_title : '';
+	?>
+	<p><?php esc_html_e( 'PDF only. It shows on the About page as a scroll.', 'stillframe' ); ?></p>
+	<input type="hidden" id="stillframe_resume_id" name="stillframe_resume_id" value="<?php echo esc_attr( (string) $resume_id ); ?>" />
+	<p data-resume-filename><?php echo $filename ? esc_html( $filename ) : esc_html__( 'No file yet.', 'stillframe' ); ?></p>
+	<p>
+		<button type="button" class="button" data-resume-upload><?php esc_html_e( 'Upload PDF', 'stillframe' ); ?></button>
+		<button type="button" class="button" data-resume-remove <?php echo $resume_id ? '' : 'hidden'; ?>><?php esc_html_e( 'Remove', 'stillframe' ); ?></button>
+	</p>
+	<?php
+}
+
+/**
+ * Save resume attachment ID.
+ *
+ * @param int $post_id Post ID.
+ */
+function stillframe_save_resume_meta( $post_id ) {
+	if ( ! isset( $_POST['stillframe_resume_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['stillframe_resume_nonce'] ) ), 'stillframe_save_resume' ) ) {
+		return;
+	}
+
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;
+	}
+
+	if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		return;
+	}
+
+	if ( ! isset( $_POST['stillframe_resume_id'] ) ) {
+		return;
+	}
+
+	$resume_id = absint( wp_unslash( $_POST['stillframe_resume_id'] ) );
+
+	if ( $resume_id ) {
+		$mime = get_post_mime_type( $resume_id );
+		if ( 'application/pdf' !== $mime ) {
+			$resume_id = 0;
+		}
+	}
+
+	if ( $resume_id ) {
+		update_post_meta( $post_id, 'stillframe_resume_id', $resume_id );
+	} else {
+		delete_post_meta( $post_id, 'stillframe_resume_id' );
+	}
+}
+add_action( 'save_post_page', 'stillframe_save_resume_meta' );
+
+/**
+ * Media picker for the resume meta box.
+ *
+ * @param string $hook Current admin page.
+ */
+function stillframe_resume_admin_assets( $hook ) {
+	if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) ) {
+		return;
+	}
+
+	$screen = get_current_screen();
+	if ( ! $screen || 'page' !== $screen->post_type ) {
+		return;
+	}
+
+	wp_enqueue_media();
+	wp_enqueue_script(
+		'stillframe-admin-resume',
+		get_template_directory_uri() . '/assets/js/admin-resume.js',
+		array( 'jquery' ),
+		STILLFRAME_VERSION,
+		true
+	);
+}
+add_action( 'admin_enqueue_scripts', 'stillframe_resume_admin_assets' );

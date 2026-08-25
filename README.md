@@ -7,7 +7,7 @@ A custom WordPress theme for a personal photography and projects site. Laid-back
 | Page | Template | Content |
 | --- | --- | --- |
 | Home | `front-page.php` | Directory into About, Gallery, Projects, and Contact |
-| About | `page-about.php` (slug `about`) or assign the **About** page template | Bio + optional portrait (featured image) |
+| About | `page-about.php` (slug `about`) or assign the **About** page template | Bio, optional portrait, optional resume PDF (shown as a scroll) |
 | Gallery | `/gallery/` archive | Series buttons first, then photographs with no series |
 | Series | `/series/your-series/` | All photographs assigned to that series |
 | Projects | `/projects/` archive | `project` custom post type |

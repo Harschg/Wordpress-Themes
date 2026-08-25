@@ -126,5 +126,26 @@ function stillframe_customize_register( $wp_customize ) {
 			'type'    => 'url',
 		)
 	);
+
+	$wp_customize->add_setting(
+		'stillframe_resume_id',
+		array(
+			'default'           => 0,
+			'sanitize_callback' => 'absint',
+		)
+	);
+
+	$wp_customize->add_control(
+		new WP_Customize_Media_Control(
+			$wp_customize,
+			'stillframe_resume_id',
+			array(
+				'label'       => __( 'Resume (PDF)', 'stillframe' ),
+				'description' => __( 'Also available in the About page editor. Shows as a scroll on About.', 'stillframe' ),
+				'section'     => 'stillframe_vibe',
+				'mime_type'   => 'application/pdf',
+			)
+		)
+	);
 }
 add_action( 'customize_register', 'stillframe_customize_register' );
