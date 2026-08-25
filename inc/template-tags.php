@@ -276,6 +276,40 @@ function stillframe_resume_url( $page_id = 0 ) {
 }
 
 /**
+ * Light-page wrapper so the browser PDF viewer does not inherit the dark theme.
+ */
+function stillframe_resume_light_viewer() {
+	if ( ! isset( $_GET['stillframe_resume'] ) ) {
+		return;
+	}
+
+	$page_id       = absint( wp_unslash( $_GET['stillframe_resume'] ) );
+	$attachment_id = stillframe_resume_attachment_id( $page_id );
+	$url           = $attachment_id ? (string) wp_get_attachment_url( $attachment_id ) : '';
+
+	if ( ! $url ) {
+		status_header( 404 );
+		exit;
+	}
+
+	nocache_headers();
+	header( 'Content-Type: text/html; charset=UTF-8' );
+	header( 'X-Frame-Options: SAMEORIGIN' );
+
+	$pdf = esc_url( $url );
+	echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">';
+	echo '<meta name="color-scheme" content="only light">';
+	echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+	echo '<title>Resume</title>';
+	echo '<style>html,body{margin:0;height:100%;background:#fff;color-scheme:only light}embed,iframe,object{display:block;width:100%;height:100%;border:0;background:#fff;color-scheme:only light}</style>';
+	echo '</head><body>';
+	echo '<embed src="' . $pdf . '#view=FitH" type="application/pdf">';
+	echo '</body></html>';
+	exit;
+}
+add_action( 'template_redirect', 'stillframe_resume_light_viewer', 0 );
+
+/**
  * Keep series photographs off the main gallery grid when series exist.
  *
  * @param WP_Query $query Query.

@@ -25,6 +25,7 @@
 
 /* About — warm clay, indoor afternoon. */
 .vibe-about {
+	color-scheme: light;
 	--bg: #161210;
 	--bg-elev: #1f1a17;
 	--bg-card: #261f1b;
@@ -112,6 +113,7 @@
 html {
 	scroll-behavior: smooth;
 	background: var(--bg);
+	color-scheme: dark;
 }
 
 html,
@@ -598,6 +600,13 @@ body.is-ready .site-footer {
 .resume-embed__frame {
 	height: min(160vh, 72rem);
 	border: 0;
+	color-scheme: light;
+	background: #fff;
+}
+
+.resume-embed,
+.resume-embed__sheet {
+	color-scheme: light;
 }
 
 /* --- contact --- */

@@ -19,10 +19,13 @@ $alt  = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
 $alt  = $alt ? $alt : __( 'Resume', 'stillframe' );
 
 $is_image = 0 === strpos( $mime, 'image/' ) || preg_match( '/\.(jpe?g|png|webp|gif)$/i', $file );
+$is_pdf   = false !== strpos( $mime, 'pdf' ) || preg_match( '/\.pdf$/i', $file );
 $is_word  = false !== strpos( $mime, 'word' ) || preg_match( '/\.docx?$/i', $file );
 
 if ( $is_word ) {
 	$url = 'https://view.officeapps.live.com/op/embed.aspx?src=' . rawurlencode( $url );
+} elseif ( $is_pdf ) {
+	$url = add_query_arg( 'stillframe_resume', (string) get_the_ID(), home_url( '/' ) );
 }
 ?>
 <section class="resume-embed reveal" data-reveal>
