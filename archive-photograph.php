@@ -15,15 +15,7 @@ $series = stillframe_photo_series_terms();
 <main id="content" class="site-main">
 	<div class="page-shell page-shell--wide">
 		<header class="archive-header reveal" data-reveal>
-			<p class="page-header__kicker"><?php esc_html_e( 'Gallery', 'stillframe' ); ?></p>
-			<h1 class="archive-header__title"><?php esc_html_e( 'Photographs', 'stillframe' ); ?></h1>
-			<p class="archive-header__lede">
-				<?php if ( $series ) : ?>
-					<?php esc_html_e( 'Open a series, or sit with a loose frame.', 'stillframe' ); ?>
-				<?php else : ?>
-					<?php esc_html_e( 'Click a frame to sit with it for a second.', 'stillframe' ); ?>
-				<?php endif; ?>
-			</p>
+			<h1 class="archive-header__title"><?php esc_html_e( 'Gallery', 'stillframe' ); ?></h1>
 		</header>
 
 		<?php if ( $series ) : ?>

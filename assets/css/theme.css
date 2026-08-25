@@ -367,15 +367,6 @@ body.is-ready .site-footer {
 	padding: 18vh 0 8vh;
 }
 
-.hero__kicker,
-.page-header__kicker {
-	margin: 0 0 1rem;
-	font-size: 0.75rem;
-	letter-spacing: 0.28em;
-	text-transform: uppercase;
-	color: var(--accent);
-}
-
 .hero__title,
 .page-header__title,
 .archive-header__title {
@@ -385,6 +376,12 @@ body.is-ready .site-footer {
 	font-size: clamp(3rem, 9vw, 7.5rem);
 	line-height: 0.95;
 	letter-spacing: -0.03em;
+}
+
+.page-header__date {
+	margin: 0.85rem 0 0;
+	color: var(--muted);
+	font-size: 0.95rem;
 }
 
 .hero__vibe,
@@ -407,10 +404,8 @@ body.is-ready .site-footer {
 	position: relative;
 	overflow: hidden;
 	display: grid;
-	grid-template-columns: 4rem 1fr auto;
-	grid-template-areas:
-		"kicker title arrow"
-		"kicker copy arrow";
+	grid-template-columns: 1fr auto;
+	grid-template-areas: "title arrow";
 	gap: 0.2rem 1.25rem;
 	align-items: center;
 	padding: 1.75rem 1.5rem;
@@ -445,26 +440,12 @@ body.is-ready .site-footer {
 	transform: translateY(-1px) scale(0.995);
 }
 
-.directory-card__kicker {
-	grid-area: kicker;
-	color: var(--accent);
-	font-size: 0.75rem;
-	letter-spacing: 0.18em;
-}
-
 .directory-card__title {
 	grid-area: title;
 	position: relative;
 	font-family: var(--font-display);
 	font-size: clamp(1.8rem, 4vw, 2.6rem);
 	font-weight: 300;
-}
-
-.directory-card__copy {
-	grid-area: copy;
-	position: relative;
-	color: var(--muted);
-	font-size: 0.95rem;
 }
 
 .directory-card__arrow {
@@ -843,13 +824,6 @@ body.is-ready .site-footer {
 	gap: 0.25rem;
 }
 
-.series-card__kicker {
-	font-size: 0.72rem;
-	letter-spacing: 0.18em;
-	text-transform: uppercase;
-	color: var(--accent);
-}
-
 .series-card__title {
 	font-family: var(--font-display);
 	font-size: clamp(1.5rem, 3vw, 2.1rem);
@@ -995,6 +969,35 @@ body.is-ready .site-footer {
 }
 
 /* --- projects --- */
+
+.projects-hero {
+	position: relative;
+	margin: 0 0 3rem;
+	overflow: hidden;
+	background: var(--bg-card);
+}
+
+.projects-hero img {
+	display: block;
+	width: 100%;
+	height: min(68vh, 720px);
+	object-fit: cover;
+	object-position: center 42%;
+}
+
+.projects-hero__caption {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: 5.5rem 0 2.25rem;
+	background: linear-gradient(to top, var(--bg) 12%, transparent);
+}
+
+.projects-hero__caption .archive-header__title {
+	width: var(--page);
+	margin: 0 auto;
+}
 
 .project-grid {
 	display: grid;
@@ -1255,9 +1258,7 @@ body.is-ready .site-footer {
 
 	.directory-card {
 		grid-template-areas:
-			"kicker"
 			"title"
-			"copy"
 			"arrow";
 	}
 

@@ -18,7 +18,6 @@ get_header();
 		<article <?php post_class( 'about' ); ?>>
 			<div class="about__grid">
 				<div class="about__copy">
-					<p class="page-header__kicker reveal" data-reveal><?php esc_html_e( 'About', 'stillframe' ); ?></p>
 					<h1 class="page-header__title reveal" data-reveal><?php the_title(); ?></h1>
 					<div class="prose reveal" data-reveal>
 						<?php the_content(); ?>

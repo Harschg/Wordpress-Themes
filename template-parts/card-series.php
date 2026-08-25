@@ -42,13 +42,12 @@ $url    = get_term_link( $term );
 		<?php endif; ?>
 	</div>
 	<div class="series-card__body">
-		<span class="series-card__kicker"><?php esc_html_e( 'Series', 'stillframe' ); ?></span>
 		<span class="series-card__title"><?php echo esc_html( $term->name ); ?></span>
 		<span class="series-card__meta">
 			<?php
 			printf(
 				/* translators: %s: number of photographs */
-				esc_html( _n( '%s frame', '%s frames', $count, 'stillframe' ) ),
+				esc_html( _n( '%s photo', '%s photos', $count, 'stillframe' ) ),
 				esc_html( number_format_i18n( $count ) )
 			);
 			?>

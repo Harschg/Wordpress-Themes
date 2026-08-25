@@ -15,7 +15,6 @@ $term = get_queried_object();
 <main id="content" class="site-main">
 	<div class="page-shell page-shell--wide">
 		<header class="archive-header reveal" data-reveal>
-			<p class="page-header__kicker"><?php esc_html_e( 'Series', 'stillframe' ); ?></p>
 			<h1 class="archive-header__title"><?php echo esc_html( $term instanceof WP_Term ? $term->name : get_the_archive_title() ); ?></h1>
 			<?php if ( $term instanceof WP_Term && $term->description ) : ?>
 				<p class="archive-header__lede"><?php echo esc_html( $term->description ); ?></p>

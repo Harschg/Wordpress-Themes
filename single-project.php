@@ -21,7 +21,6 @@ $stack  = stillframe_project_stack( get_the_ID() );
 		?>
 		<article <?php post_class( 'project-single page-shell' ); ?>>
 			<header class="project-single__header">
-				<p class="page-header__kicker reveal" data-reveal><?php esc_html_e( 'Project', 'stillframe' ); ?></p>
 				<h1 class="page-header__title reveal" data-reveal><?php the_title(); ?></h1>
 				<?php if ( has_excerpt() ) : ?>
 					<p class="project-single__lede reveal" data-reveal><?php echo esc_html( get_the_excerpt() ); ?></p>

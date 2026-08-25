@@ -7,7 +7,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$footer_note = get_theme_mod( 'stillframe_footer_note', __( 'Shot slow. Built with care.', 'stillframe' ) );
+$footer_note = get_theme_mod( 'stillframe_footer_note', '' );
 ?>
 
 <footer class="site-footer">

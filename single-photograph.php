@@ -30,7 +30,6 @@ $series   = ( ! is_wp_error( $series ) && $series ) ? $series : array();
 
 			<div class="photo-single__meta page-shell">
 				<header class="reveal" data-reveal>
-					<p class="page-header__kicker"><?php esc_html_e( 'Photograph', 'stillframe' ); ?></p>
 					<h1 class="page-header__title"><?php the_title(); ?></h1>
 				</header>
 

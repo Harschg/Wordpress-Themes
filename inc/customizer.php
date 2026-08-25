@@ -24,7 +24,7 @@ function stillframe_customize_register( $wp_customize ) {
 	$wp_customize->add_setting(
 		'stillframe_vibe_line',
 		array(
-			'default'           => __( 'Laid-back photographs and things I make.', 'stillframe' ),
+			'default'           => '',
 			'sanitize_callback' => 'sanitize_text_field',
 			'transport'         => 'refresh',
 		)
@@ -33,7 +33,8 @@ function stillframe_customize_register( $wp_customize ) {
 	$wp_customize->add_control(
 		'stillframe_vibe_line',
 		array(
-			'label'   => __( 'Home vibe line', 'stillframe' ),
+			'label'       => __( 'Home subtitle', 'stillframe' ),
+			'description' => __( 'Optional line under your name. Leave blank if you don\'t want one.', 'stillframe' ),
 			'section' => 'stillframe_vibe',
 			'type'    => 'text',
 		)
@@ -42,7 +43,7 @@ function stillframe_customize_register( $wp_customize ) {
 	$wp_customize->add_setting(
 		'stillframe_footer_note',
 		array(
-			'default'           => __( 'Shot slow. Built with care.', 'stillframe' ),
+			'default'           => '',
 			'sanitize_callback' => 'sanitize_text_field',
 		)
 	);
@@ -50,7 +51,8 @@ function stillframe_customize_register( $wp_customize ) {
 	$wp_customize->add_control(
 		'stillframe_footer_note',
 		array(
-			'label'   => __( 'Footer note', 'stillframe' ),
+			'label'       => __( 'Footer note', 'stillframe' ),
+			'description' => __( 'Optional. Leave blank to show only the copyright.', 'stillframe' ),
 			'section' => 'stillframe_vibe',
 			'type'    => 'text',
 		)

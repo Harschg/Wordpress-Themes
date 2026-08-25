@@ -22,7 +22,7 @@ A custom WordPress theme for a personal photography and projects site. Laid-back
 5. Create a page with slug `about` and a page with slug `contact` (or assign the About / Contact templates).
 6. Add **Photographs** (featured image + location / camera / year in the sidebar). To group them, create a **Series** under Photographs → Series and check it on each photo. The gallery shows a Series section; clicking a series opens only those photos.
 7. Add **Projects** (excerpt, stack, GitHub, live URL, featured image).
-8. Optional: **Appearance → Customize → Stillframe** for the home vibe line, footer note, contact email, and social URLs. **Appearance → Menus** to replace the default nav.
+8. Optional: **Appearance → Customize → Stillframe** for a home subtitle, footer note, contact email, and social URLs. **Appearance → Menus** to replace the default nav.
 
 Local WordPress options: [Local](https://localwp.com/), Laragon, or `wp-env`.
 

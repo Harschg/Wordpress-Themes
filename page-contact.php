@@ -23,15 +23,12 @@ $github    = get_theme_mod( 'stillframe_github', '' );
 		<article <?php post_class( 'contact' ); ?>>
 			<div class="contact__grid">
 				<div class="contact__intro">
-					<p class="page-header__kicker reveal" data-reveal><?php esc_html_e( 'Contact', 'stillframe' ); ?></p>
 					<h1 class="page-header__title reveal" data-reveal><?php the_title(); ?></h1>
-					<div class="prose reveal" data-reveal>
-						<?php if ( get_the_content() ) : ?>
+					<?php if ( get_the_content() ) : ?>
+						<div class="prose reveal" data-reveal>
 							<?php the_content(); ?>
-						<?php else : ?>
-							<p><?php esc_html_e( 'Say hello. Commissions, collaborations, or just a note — I read everything.', 'stillframe' ); ?></p>
-						<?php endif; ?>
-					</div>
+						</div>
+					<?php endif; ?>
 
 					<ul class="contact-links reveal" data-reveal>
 						<?php if ( is_email( $email ) ) : ?>
@@ -43,13 +40,13 @@ $github    = get_theme_mod( 'stillframe_github', '' );
 						<?php if ( $instagram ) : ?>
 							<li>
 								<span><?php esc_html_e( 'Instagram', 'stillframe' ); ?></span>
-								<a href="<?php echo esc_url( $instagram ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open profile', 'stillframe' ); ?></a>
+								<a href="<?php echo esc_url( $instagram ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( preg_replace( '#^https?://(www\.)?#i', '', $instagram ) ); ?></a>
 							</li>
 						<?php endif; ?>
 						<?php if ( $github ) : ?>
 							<li>
 								<span><?php esc_html_e( 'GitHub', 'stillframe' ); ?></span>
-								<a href="<?php echo esc_url( $github ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open profile', 'stillframe' ); ?></a>
+								<a href="<?php echo esc_url( $github ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( preg_replace( '#^https?://(www\.)?#i', '', $github ) ); ?></a>
 							</li>
 						<?php endif; ?>
 					</ul>
@@ -58,15 +55,15 @@ $github    = get_theme_mod( 'stillframe_github', '' );
 				<div class="contact__form-wrap reveal" data-reveal>
 					<?php if ( 'sent' === $status ) : ?>
 						<p class="contact-banner contact-banner--ok" role="status">
-							<?php esc_html_e( 'Sent. I will get back to you when I can.', 'stillframe' ); ?>
+							<?php esc_html_e( 'Thanks — I\'ll get back to you.', 'stillframe' ); ?>
 						</p>
 					<?php elseif ( 'invalid' === $status ) : ?>
 						<p class="contact-banner contact-banner--err" role="alert">
-							<?php esc_html_e( 'Need a name, a real email, and a message.', 'stillframe' ); ?>
+							<?php esc_html_e( 'Name, email, and a message are required.', 'stillframe' ); ?>
 						</p>
 					<?php elseif ( 'error' === $status ) : ?>
 						<p class="contact-banner contact-banner--err" role="alert">
-							<?php esc_html_e( 'Something stalled. Try again in a minute, or email me directly.', 'stillframe' ); ?>
+							<?php esc_html_e( 'Couldn\'t send that. Try again, or email me.', 'stillframe' ); ?>
 						</p>
 					<?php endif; ?>
 

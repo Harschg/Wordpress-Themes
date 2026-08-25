@@ -14,7 +14,7 @@ get_header();
 	<div class="page-shell">
 		<?php if ( have_posts() ) : ?>
 			<header class="archive-header reveal" data-reveal>
-				<h1 class="archive-header__title"><?php esc_html_e( 'Journal', 'stillframe' ); ?></h1>
+				<h1 class="archive-header__title"><?php esc_html_e( 'Posts', 'stillframe' ); ?></h1>
 			</header>
 			<div class="post-list">
 				<?php

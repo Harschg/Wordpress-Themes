@@ -11,13 +11,19 @@ get_header();
 ?>
 
 <main id="content" class="site-main">
-	<div class="page-shell">
-		<header class="archive-header reveal" data-reveal>
-			<p class="page-header__kicker"><?php esc_html_e( 'Work', 'stillframe' ); ?></p>
+	<figure class="projects-hero">
+		<img
+			src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/projects-hero.jpg' ); ?>"
+			alt=""
+			width="1600"
+			height="900"
+		/>
+		<figcaption class="projects-hero__caption">
 			<h1 class="archive-header__title"><?php esc_html_e( 'Projects', 'stillframe' ); ?></h1>
-			<p class="archive-header__lede"><?php esc_html_e( 'A few things I have designed, programmed, and put into the world.', 'stillframe' ); ?></p>
-		</header>
+		</figcaption>
+	</figure>
 
+	<div class="page-shell">
 		<?php if ( have_posts() ) : ?>
 			<div class="project-grid">
 				<?php

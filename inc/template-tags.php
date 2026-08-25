@@ -114,6 +114,8 @@ function stillframe_series_preview_photos( $term_id, $count = 3 ) {
 		array(
 			'post_type'      => 'photograph',
 			'posts_per_page' => (int) $count,
+			'orderby'        => 'title',
+			'order'          => 'ASC',
 			'no_found_rows'  => true,
 			'tax_query'      => array(
 				array(
@@ -150,8 +152,10 @@ function stillframe_gallery_query( $query ) {
 		);
 	}
 
-	if ( $query->is_post_type_archive( 'photograph' ) || $query->is_tax( 'photo_series' ) ) {
+	if ( $query->is_post_type_archive( 'photograph' ) || $query->is_tax( 'photo_series' ) || $query->is_post_type_archive( 'project' ) || $query->is_tax( 'project_type' ) ) {
 		$query->set( 'posts_per_page', 24 );
+		$query->set( 'orderby', 'title' );
+		$query->set( 'order', 'ASC' );
 	}
 }
 add_action( 'pre_get_posts', 'stillframe_gallery_query' );

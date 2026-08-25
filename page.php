@@ -17,7 +17,6 @@ get_header();
 		?>
 		<article <?php post_class( 'page-shell page-article' ); ?>>
 			<header class="page-header reveal" data-reveal>
-				<p class="page-header__kicker"><?php esc_html_e( 'Page', 'stillframe' ); ?></p>
 				<h1 class="page-header__title"><?php the_title(); ?></h1>
 			</header>
 			<div class="prose reveal" data-reveal>

@@ -17,8 +17,8 @@ get_header();
 		?>
 		<article <?php post_class( 'page-shell page-article' ); ?>>
 			<header class="page-header reveal" data-reveal>
-				<p class="page-header__kicker"><?php echo esc_html( get_the_date() ); ?></p>
 				<h1 class="page-header__title"><?php the_title(); ?></h1>
+				<p class="page-header__date"><?php echo esc_html( get_the_date() ); ?></p>
 			</header>
 			<?php if ( has_post_thumbnail() ) : ?>
 				<figure class="page-article__hero reveal" data-reveal>
