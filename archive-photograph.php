@@ -13,10 +13,17 @@ $series = stillframe_photo_series_terms();
 ?>
 
 <main id="content" class="site-main">
+	<?php
+	get_template_part(
+		'template-parts/section-hero',
+		null,
+		array(
+			'section' => 'gallery',
+			'title'   => __( 'Gallery', 'stillframe' ),
+		)
+	);
+	?>
 	<div class="page-shell page-shell--wide">
-		<header class="archive-header reveal" data-reveal>
-			<h1 class="archive-header__title"><?php esc_html_e( 'Gallery', 'stillframe' ); ?></h1>
-		</header>
 
 		<?php if ( $series ) : ?>
 			<section class="series-directory" aria-labelledby="series-heading">

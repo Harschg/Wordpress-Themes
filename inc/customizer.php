@@ -1,6 +1,8 @@
 <?php
 /**
- * Theme Customizer: vibe line and footer note.
+ * Theme Customizer: site-wide footer note only.
+ *
+ * Page settings live on the pages they belong to.
  *
  * @package Stillframe
  */
@@ -22,25 +24,6 @@ function stillframe_customize_register( $wp_customize ) {
 	);
 
 	$wp_customize->add_setting(
-		'stillframe_vibe_line',
-		array(
-			'default'           => '',
-			'sanitize_callback' => 'sanitize_text_field',
-			'transport'         => 'refresh',
-		)
-	);
-
-	$wp_customize->add_control(
-		'stillframe_vibe_line',
-		array(
-			'label'       => __( 'Home subtitle', 'stillframe' ),
-			'description' => __( 'Optional line under your name. Leave blank if you don\'t want one.', 'stillframe' ),
-			'section' => 'stillframe_vibe',
-			'type'    => 'text',
-		)
-	);
-
-	$wp_customize->add_setting(
 		'stillframe_footer_note',
 		array(
 			'default'           => '',
@@ -52,98 +35,9 @@ function stillframe_customize_register( $wp_customize ) {
 		'stillframe_footer_note',
 		array(
 			'label'       => __( 'Footer note', 'stillframe' ),
-			'description' => __( 'Optional. Leave blank to show only the copyright.', 'stillframe' ),
-			'section' => 'stillframe_vibe',
-			'type'    => 'text',
-		)
-	);
-
-	$wp_customize->add_setting(
-		'stillframe_contact_email',
-		array(
-			'default'           => get_option( 'admin_email' ),
-			'sanitize_callback' => 'sanitize_email',
-		)
-	);
-
-	$wp_customize->add_control(
-		'stillframe_contact_email',
-		array(
-			'label'       => __( 'Contact email', 'stillframe' ),
-			'description' => __( 'Where contact form messages are sent, and the mailto link on the Contact page.', 'stillframe' ),
+			'description' => __( 'Optional site-wide line in the footer. Leave blank to show only the copyright and LinkedIn.', 'stillframe' ),
 			'section'     => 'stillframe_vibe',
-			'type'        => 'email',
-		)
-	);
-
-	$wp_customize->add_setting(
-		'stillframe_linkedin',
-		array(
-			'default'           => 'https://www.linkedin.com/in/grant-harsch',
-			'sanitize_callback' => 'esc_url_raw',
-		)
-	);
-
-	$wp_customize->add_control(
-		'stillframe_linkedin',
-		array(
-			'label'   => __( 'LinkedIn URL', 'stillframe' ),
-			'section' => 'stillframe_vibe',
-			'type'    => 'url',
-		)
-	);
-
-	$wp_customize->add_setting(
-		'stillframe_instagram',
-		array(
-			'default'           => '',
-			'sanitize_callback' => 'esc_url_raw',
-		)
-	);
-
-	$wp_customize->add_control(
-		'stillframe_instagram',
-		array(
-			'label'   => __( 'Instagram URL', 'stillframe' ),
-			'section' => 'stillframe_vibe',
-			'type'    => 'url',
-		)
-	);
-
-	$wp_customize->add_setting(
-		'stillframe_github',
-		array(
-			'default'           => '',
-			'sanitize_callback' => 'esc_url_raw',
-		)
-	);
-
-	$wp_customize->add_control(
-		'stillframe_github',
-		array(
-			'label'   => __( 'GitHub URL', 'stillframe' ),
-			'section' => 'stillframe_vibe',
-			'type'    => 'url',
-		)
-	);
-
-	$wp_customize->add_setting(
-		'stillframe_resume_id',
-		array(
-			'default'           => 0,
-			'sanitize_callback' => 'absint',
-		)
-	);
-
-	$wp_customize->add_control(
-		new WP_Customize_Media_Control(
-			$wp_customize,
-			'stillframe_resume_id',
-			array(
-				'label'       => __( 'Resume', 'stillframe' ),
-				'description' => __( 'Also available in the About page editor (sidebar). Displays on About.', 'stillframe' ),
-				'section'     => 'stillframe_vibe',
-			)
+			'type'        => 'text',
 		)
 	);
 }

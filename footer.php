@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 $footer_note = get_theme_mod( 'stillframe_footer_note', '' );
-$linkedin    = get_theme_mod( 'stillframe_linkedin', 'https://www.linkedin.com/in/grant-harsch' );
+$linkedin    = stillframe_contact_setting( 'stillframe_linkedin', 'https://www.linkedin.com/in/grant-harsch' );
 ?>
 
 <footer class="site-footer">

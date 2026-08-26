@@ -11,19 +11,16 @@ get_header();
 ?>
 
 <main id="content" class="site-main">
-	<figure class="projects-hero">
-		<img
-			src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/projects-hero.jpg?ver=' . STILLFRAME_VERSION ); ?>"
-			alt=""
-			width="1536"
-			height="491"
-			decoding="async"
-			fetchpriority="high"
-		/>
-		<figcaption class="projects-hero__caption">
-			<h1 class="archive-header__title"><?php esc_html_e( 'Projects', 'stillframe' ); ?></h1>
-		</figcaption>
-	</figure>
+	<?php
+	get_template_part(
+		'template-parts/section-hero',
+		null,
+		array(
+			'section' => 'projects',
+			'title'   => __( 'Projects', 'stillframe' ),
+		)
+	);
+	?>
 
 	<div class="page-shell">
 		<?php if ( have_posts() ) : ?>

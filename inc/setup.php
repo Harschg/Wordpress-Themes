@@ -168,3 +168,167 @@ function stillframe_after_switch_theme() {
 	flush_rewrite_rules();
 }
 add_action( 'after_switch_theme', 'stillframe_after_switch_theme' );
+
+/**
+ * Create Gallery / Projects pages so every banner lives in the page editor.
+ */
+function stillframe_ensure_section_pages() {
+	if ( ! current_user_can( 'publish_pages' ) ) {
+		return;
+	}
+
+	$created = false;
+	$pages   = array(
+		'gallery'  => __( 'Gallery', 'stillframe' ),
+		'projects' => __( 'Projects', 'stillframe' ),
+	);
+
+	foreach ( $pages as $slug => $title ) {
+		if ( stillframe_get_section_page( $slug ) instanceof WP_Post ) {
+			continue;
+		}
+
+		$page_id = wp_insert_post(
+			array(
+				'post_title'  => $title,
+				'post_name'   => $slug,
+				'post_status' => 'publish',
+				'post_type'   => 'page',
+				'post_content' => '',
+			),
+			true
+		);
+
+		if ( ! is_wp_error( $page_id ) && $page_id ) {
+			$created = true;
+		}
+	}
+
+	if ( $created ) {
+		flush_rewrite_rules( false );
+	}
+}
+
+/**
+ * Move Customizer banner picks onto the matching pages, once.
+ */
+function stillframe_migrate_hero_mods_to_pages() {
+	$sections = array( 'home', 'about', 'gallery', 'projects', 'contact' );
+
+	foreach ( $sections as $section ) {
+		$mod_id  = (int) get_theme_mod( 'stillframe_hero_' . $section, 0 );
+		$page_id = stillframe_section_banner_page_id( $section );
+
+		if ( ! $mod_id || ! $page_id ) {
+			continue;
+		}
+
+		if ( (int) get_post_meta( $page_id, 'stillframe_banner_id', true ) ) {
+			continue;
+		}
+
+		update_post_meta( $page_id, 'stillframe_banner_id', $mod_id );
+	}
+}
+
+/**
+ * Move Customizer page settings onto the matching pages, once.
+ */
+function stillframe_migrate_customizer_to_pages() {
+	$home_id = (int) get_option( 'page_on_front' );
+
+	if ( $home_id ) {
+		$subtitle = (string) get_theme_mod( 'stillframe_vibe_line', '' );
+		if ( $subtitle && ! get_post_meta( $home_id, 'stillframe_subtitle', true ) ) {
+			update_post_meta( $home_id, 'stillframe_subtitle', $subtitle );
+		}
+
+		$intro = trim( (string) get_theme_mod( 'stillframe_home_intro', '' ) );
+		$home  = get_post( $home_id );
+		if ( $intro && $home instanceof WP_Post && '' === trim( wp_strip_all_tags( (string) $home->post_content ) ) ) {
+			wp_update_post(
+				array(
+					'ID'           => $home_id,
+					'post_content' => $intro,
+				)
+			);
+		}
+	}
+
+	$contact = stillframe_get_section_page( 'contact' );
+	if ( $contact instanceof WP_Post ) {
+		$fields = array(
+			'stillframe_contact_email' => get_theme_mod( 'stillframe_contact_email', '' ),
+			'stillframe_linkedin'      => get_theme_mod( 'stillframe_linkedin', 'https://www.linkedin.com/in/grant-harsch' ),
+			'stillframe_instagram'     => get_theme_mod( 'stillframe_instagram', '' ),
+			'stillframe_github'        => get_theme_mod( 'stillframe_github', '' ),
+		);
+
+		foreach ( $fields as $key => $value ) {
+			if ( ! $value || get_post_meta( $contact->ID, $key, true ) ) {
+				continue;
+			}
+
+			update_post_meta( $contact->ID, $key, $value );
+		}
+	}
+
+	$about  = stillframe_get_section_page( 'about' );
+	$resume = (int) get_theme_mod( 'stillframe_resume_id', 0 );
+	if ( $about instanceof WP_Post && $resume && ! get_post_meta( $about->ID, 'stillframe_resume_id', true ) ) {
+		update_post_meta( $about->ID, 'stillframe_resume_id', $resume );
+	}
+}
+
+/**
+ * One-time page setup after this theme is already running.
+ */
+function stillframe_maybe_setup_banner_pages() {
+	if ( '1.0.20' === get_option( 'stillframe_banner_pages' ) ) {
+		return;
+	}
+
+	stillframe_ensure_section_pages();
+	stillframe_migrate_hero_mods_to_pages();
+	update_option( 'stillframe_banner_pages', '1.0.20' );
+}
+add_action( 'admin_init', 'stillframe_maybe_setup_banner_pages' );
+
+/**
+ * One-time copy of Customizer page fields onto Home / About / Contact.
+ */
+function stillframe_maybe_migrate_page_settings() {
+	if ( '1.0.21' === get_option( 'stillframe_page_settings' ) ) {
+		return;
+	}
+
+	stillframe_ensure_section_pages();
+	stillframe_migrate_hero_mods_to_pages();
+	stillframe_migrate_customizer_to_pages();
+	update_option( 'stillframe_page_settings', '1.0.21' );
+}
+add_action( 'admin_init', 'stillframe_maybe_migrate_page_settings' );
+
+/**
+ * Always use the About / Contact templates when those pages are detected.
+ */
+function stillframe_template_include( $template ) {
+	if ( ! is_singular( 'page' ) ) {
+		return $template;
+	}
+
+	$page_id = (int) get_queried_object_id();
+
+	if ( stillframe_is_about_page( $page_id ) ) {
+		$found = locate_template( 'page-about.php' );
+		return $found ? $found : $template;
+	}
+
+	if ( stillframe_is_contact_page( $page_id ) ) {
+		$found = locate_template( 'page-contact.php' );
+		return $found ? $found : $template;
+	}
+
+	return $template;
+}
+add_filter( 'template_include', 'stillframe_template_include' );

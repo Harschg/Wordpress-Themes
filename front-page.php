@@ -9,7 +9,8 @@ defined( 'ABSPATH' ) || exit;
 
 get_header();
 
-$vibe = get_theme_mod( 'stillframe_vibe_line', '' );
+$vibe  = stillframe_home_subtitle();
+$intro = stillframe_home_intro_html();
 
 $cards = array(
 	array(
@@ -32,27 +33,41 @@ $cards = array(
 ?>
 
 <main id="content" class="site-main">
-	<section class="hero">
-		<h1 class="hero__title reveal" data-reveal>
-			<?php bloginfo( 'name' ); ?>
-		</h1>
-		<?php if ( $vibe ) : ?>
-			<p class="hero__vibe reveal" data-reveal><?php echo esc_html( $vibe ); ?></p>
-		<?php endif; ?>
-	</section>
+	<?php
+	get_template_part(
+		'template-parts/section-hero',
+		null,
+		array(
+			'section' => 'home',
+			'title'   => get_bloginfo( 'name' ),
+			'lede'    => $vibe,
+		)
+	);
+	?>
 
-	<section class="directory" aria-label="<?php esc_attr_e( 'Pages', 'stillframe' ); ?>">
-		<?php foreach ( $cards as $index => $card ) : ?>
-			<a
-				class="directory-card reveal"
-				data-reveal
-				data-stagger="<?php echo esc_attr( (string) $index ); ?>"
-				href="<?php echo esc_url( $card['url'] ); ?>"
-			>
-				<span class="directory-card__title"><?php echo esc_html( $card['title'] ); ?></span>
-				<span class="directory-card__arrow" aria-hidden="true">→</span>
-			</a>
-		<?php endforeach; ?>
+	<section class="home-intro<?php echo $intro ? '' : ' home-intro--buttons-only'; ?>" aria-label="<?php esc_attr_e( 'Welcome', 'stillframe' ); ?>">
+		<?php if ( $intro ) : ?>
+			<div class="home-intro__copy prose reveal" data-reveal>
+				<?php echo wp_kses_post( $intro ); ?>
+			</div>
+		<?php endif; ?>
+
+		<div class="directory" aria-label="<?php esc_attr_e( 'Pages', 'stillframe' ); ?>">
+			<?php foreach ( $cards as $index => $card ) : ?>
+				<?php if ( empty( $card['url'] ) ) : ?>
+					<?php continue; ?>
+				<?php endif; ?>
+				<a
+					class="directory-card reveal"
+					data-reveal
+					data-stagger="<?php echo esc_attr( (string) $index ); ?>"
+					href="<?php echo esc_url( $card['url'] ); ?>"
+				>
+					<span class="directory-card__title"><?php echo esc_html( $card['title'] ); ?></span>
+					<span class="directory-card__arrow" aria-hidden="true">→</span>
+				</a>
+			<?php endforeach; ?>
+		</div>
 	</section>
 </main>
 

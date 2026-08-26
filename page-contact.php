@@ -10,10 +10,10 @@ defined( 'ABSPATH' ) || exit;
 get_header();
 
 $status   = isset( $_GET['contact'] ) ? sanitize_key( wp_unslash( $_GET['contact'] ) ) : '';
-$email     = get_theme_mod( 'stillframe_contact_email', get_option( 'admin_email' ) );
-$linkedin  = get_theme_mod( 'stillframe_linkedin', 'https://www.linkedin.com/in/grant-harsch' );
-$instagram = get_theme_mod( 'stillframe_instagram', '' );
-$github    = get_theme_mod( 'stillframe_github', '' );
+$email     = stillframe_contact_setting( 'stillframe_contact_email', get_option( 'admin_email' ) );
+$linkedin  = stillframe_contact_setting( 'stillframe_linkedin', 'https://www.linkedin.com/in/grant-harsch' );
+$instagram = stillframe_contact_setting( 'stillframe_instagram' );
+$github    = stillframe_contact_setting( 'stillframe_github' );
 ?>
 
 <main id="content" class="site-main">
@@ -22,9 +22,18 @@ $github    = get_theme_mod( 'stillframe_github', '' );
 		the_post();
 		?>
 		<article <?php post_class( 'contact' ); ?>>
+			<?php
+			get_template_part(
+				'template-parts/section-hero',
+				null,
+				array(
+					'section' => 'contact',
+					'title'   => get_the_title(),
+				)
+			);
+			?>
 			<div class="contact__grid">
 				<div class="contact__intro">
-					<h1 class="page-header__title reveal" data-reveal><?php the_title(); ?></h1>
 					<?php if ( get_the_content() ) : ?>
 						<div class="prose reveal" data-reveal>
 							<?php the_content(); ?>

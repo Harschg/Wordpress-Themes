@@ -14,52 +14,286 @@ defined( 'ABSPATH' ) || exit;
  * @return string
  */
 function stillframe_page_url( $slug ) {
-	$page = get_page_by_path( $slug );
+	$page = stillframe_get_section_page( $slug );
 
 	if ( $page instanceof WP_Post ) {
 		return get_permalink( $page );
 	}
 
-	return home_url( '/' . trim( $slug, '/' ) . '/' );
+	return '';
+}
+
+/**
+ * Find the WordPress page used for a section slug.
+ *
+ * Matches nested pages (not only /about/) and titles like "About Grant Harsch".
+ *
+ * @param string $slug about|contact or another page path.
+ * @return WP_Post|null
+ */
+function stillframe_get_section_page( $slug ) {
+	$slug = sanitize_title( $slug );
+
+	if ( '' === $slug ) {
+		return null;
+	}
+
+	$by_path = get_page_by_path( $slug );
+	if ( $by_path instanceof WP_Post ) {
+		return $by_path;
+	}
+
+	$by_name = new WP_Query(
+		array(
+			'post_type'              => 'page',
+			'post_status'            => 'publish',
+			'name'                   => $slug,
+			'posts_per_page'         => 1,
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		)
+	);
+
+	if ( ! empty( $by_name->posts[0] ) && $by_name->posts[0] instanceof WP_Post ) {
+		return $by_name->posts[0];
+	}
+
+	$template = '';
+	if ( 'about' === $slug ) {
+		$template = 'template-about.php';
+	} elseif ( 'contact' === $slug ) {
+		$template = 'template-contact.php';
+	}
+
+	$pages = get_pages(
+		array(
+			'number'      => 100,
+			'sort_column' => 'menu_order,post_title',
+		)
+	);
+
+	if ( empty( $pages ) ) {
+		return null;
+	}
+
+	if ( $template ) {
+		foreach ( $pages as $candidate ) {
+			if ( $candidate instanceof WP_Post && $template === get_page_template_slug( $candidate->ID ) ) {
+				return $candidate;
+			}
+		}
+	}
+
+	foreach ( $pages as $candidate ) {
+		if ( ! $candidate instanceof WP_Post ) {
+			continue;
+		}
+
+		$name = (string) $candidate->post_name;
+		if ( $slug === $name || 0 === strpos( $name, $slug . '-' ) ) {
+			return $candidate;
+		}
+	}
+
+	foreach ( $pages as $candidate ) {
+		if ( $candidate instanceof WP_Post && 0 === stripos( (string) $candidate->post_title, $slug ) ) {
+			return $candidate;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Primary navigation items.
+ *
+ * @return array<int, array{key: string, url: string, label: string}>
+ */
+function stillframe_nav_items() {
+	return array(
+		array(
+			'key'   => 'home',
+			'url'   => home_url( '/' ),
+			'label' => __( 'Home', 'stillframe' ),
+		),
+		array(
+			'key'   => 'about',
+			'url'   => stillframe_page_url( 'about' ),
+			'label' => __( 'About', 'stillframe' ),
+		),
+		array(
+			'key'   => 'gallery',
+			'url'   => get_post_type_archive_link( 'photograph' ),
+			'label' => __( 'Gallery', 'stillframe' ),
+		),
+		array(
+			'key'   => 'projects',
+			'url'   => get_post_type_archive_link( 'project' ),
+			'label' => __( 'Projects', 'stillframe' ),
+		),
+		array(
+			'key'   => 'contact',
+			'url'   => stillframe_page_url( 'contact' ),
+			'label' => __( 'Contact', 'stillframe' ),
+		),
+	);
+}
+
+/**
+ * Whether a primary nav item matches the current request.
+ *
+ * @param string $key Nav item key.
+ * @return bool
+ */
+function stillframe_nav_item_is_current( $key ) {
+	switch ( $key ) {
+		case 'home':
+			return is_front_page();
+		case 'about':
+			if ( is_front_page() || ! is_page() ) {
+				return false;
+			}
+
+			$page_id = (int) get_queried_object_id();
+			if ( stillframe_is_about_page( $page_id ) ) {
+				return true;
+			}
+
+			$about = stillframe_get_section_page( 'about' );
+			return $about instanceof WP_Post && $page_id === (int) $about->ID;
+		case 'gallery':
+			return is_post_type_archive( 'photograph' ) || is_tax( 'photo_series' ) || is_singular( 'photograph' );
+		case 'projects':
+			return is_post_type_archive( 'project' ) || is_tax( 'project_type' ) || is_singular( 'project' );
+		case 'contact':
+			if ( is_front_page() || ! is_page() ) {
+				return false;
+			}
+
+			return stillframe_is_contact_page( (int) get_queried_object_id() );
+		default:
+			return false;
+	}
+}
+
+/**
+ * Banner image URL for a site section.
+ *
+ * Page banner first, then an older Customizer upload, then the theme default file.
+ *
+ * @param string $section home|about|gallery|projects|contact.
+ * @return string
+ */
+function stillframe_section_hero_url( $section ) {
+	$section = sanitize_key( $section );
+	$page_id = stillframe_section_banner_page_id( $section );
+
+	if ( $page_id ) {
+		$from_page = stillframe_banner_url_from_page( $page_id );
+		if ( $from_page ) {
+			return $from_page;
+		}
+	}
+
+	$mod_id = (int) get_theme_mod( 'stillframe_hero_' . $section, 0 );
+
+	if ( $mod_id ) {
+		$url = wp_get_attachment_image_url( $mod_id, 'full' );
+		if ( $url ) {
+			return $url;
+		}
+	}
+
+	$relative = 'assets/images/' . $section . '-hero.jpg';
+	$path     = get_template_directory() . '/' . $relative;
+
+	if ( is_readable( $path ) ) {
+		return get_template_directory_uri() . '/' . $relative . '?ver=' . STILLFRAME_VERSION;
+	}
+
+	return '';
+}
+
+/**
+ * Page whose banner meta belongs to a site section.
+ *
+ * @param string $section home|about|gallery|projects|contact.
+ * @return int
+ */
+function stillframe_section_banner_page_id( $section ) {
+	if ( 'home' === $section ) {
+		return (int) get_option( 'page_on_front' );
+	}
+
+	if ( 'about' === $section ) {
+		$current = (int) get_queried_object_id();
+		if ( $current && stillframe_is_about_page( $current ) ) {
+			return $current;
+		}
+
+		$about = stillframe_get_section_page( 'about' );
+		return $about instanceof WP_Post ? (int) $about->ID : 0;
+	}
+
+	if ( 'contact' === $section ) {
+		$current = (int) get_queried_object_id();
+		if ( $current && stillframe_is_contact_page( $current ) ) {
+			return $current;
+		}
+
+		$contact = stillframe_get_section_page( 'contact' );
+		return $contact instanceof WP_Post ? (int) $contact->ID : 0;
+	}
+
+	if ( 'gallery' === $section || 'projects' === $section ) {
+		$page = stillframe_get_section_page( $section );
+		return $page instanceof WP_Post ? (int) $page->ID : 0;
+	}
+
+	return 0;
+}
+
+/**
+ * Banner image URL stored on a page.
+ *
+ * @param int $page_id Page ID.
+ * @return string
+ */
+function stillframe_banner_url_from_page( $page_id ) {
+	$page_id = (int) $page_id;
+	if ( ! $page_id ) {
+		return '';
+	}
+
+	$banner_id = (int) get_post_meta( $page_id, 'stillframe_banner_id', true );
+	if ( ! $banner_id ) {
+		return '';
+	}
+
+	$url = wp_get_attachment_image_url( $banner_id, 'full' );
+
+	return $url ? $url : '';
 }
 
 /**
  * Fallback menu when no menu is assigned in Appearance → Menus.
  */
 function stillframe_fallback_menu() {
-	$items = array(
-		array(
-			'url'   => home_url( '/' ),
-			'label' => __( 'Home', 'stillframe' ),
-		),
-		array(
-			'url'   => stillframe_page_url( 'about' ),
-			'label' => __( 'About', 'stillframe' ),
-		),
-		array(
-			'url'   => get_post_type_archive_link( 'photograph' ),
-			'label' => __( 'Gallery', 'stillframe' ),
-		),
-		array(
-			'url'   => get_post_type_archive_link( 'project' ),
-			'label' => __( 'Projects', 'stillframe' ),
-		),
-		array(
-			'url'   => stillframe_page_url( 'contact' ),
-			'label' => __( 'Contact', 'stillframe' ),
-		),
-	);
-
 	echo '<ul class="nav-list">';
 
-	foreach ( $items as $item ) {
+	foreach ( stillframe_nav_items() as $item ) {
 		if ( empty( $item['url'] ) ) {
 			continue;
 		}
 
+		$current = stillframe_nav_item_is_current( $item['key'] );
+
 		printf(
-			'<li><a class="nav-link" href="%1$s">%2$s</a></li>',
+			'<li class="%1$s"><a class="nav-link" href="%2$s"%3$s>%4$s</a></li>',
+			$current ? 'is-current' : '',
 			esc_url( $item['url'] ),
+			$current ? ' aria-current="page"' : '',
 			esc_html( $item['label'] )
 		);
 	}
@@ -221,12 +455,109 @@ function stillframe_is_about_page( $page_id = 0 ) {
 		return false;
 	}
 
-	$slug = get_post_field( 'post_name', $page_id );
-	if ( 'about' === $slug ) {
+	$slug = (string) get_post_field( 'post_name', $page_id );
+	if ( 'about' === $slug || 0 === strpos( $slug, 'about' ) ) {
 		return true;
 	}
 
 	return 'template-about.php' === get_page_template_slug( $page_id );
+}
+
+/**
+ * Whether this page is the Contact screen (slug or page template).
+ *
+ * @param int $page_id Optional page ID. Defaults to the current post.
+ * @return bool
+ */
+function stillframe_is_contact_page( $page_id = 0 ) {
+	$page_id = $page_id ? (int) $page_id : (int) get_the_ID();
+	if ( ! $page_id ) {
+		return false;
+	}
+
+	$slug = (string) get_post_field( 'post_name', $page_id );
+	if ( 'contact' === $slug || 0 === strpos( $slug, 'contact' ) ) {
+		return true;
+	}
+
+	return 'template-contact.php' === get_page_template_slug( $page_id );
+}
+
+/**
+ * Whether this page is the Home screen used by front-page.php.
+ *
+ * @param int $page_id Optional page ID. Defaults to the current post.
+ * @return bool
+ */
+function stillframe_is_home_page( $page_id = 0 ) {
+	$page_id = $page_id ? (int) $page_id : (int) get_the_ID();
+	if ( ! $page_id ) {
+		return false;
+	}
+
+	if ( (int) get_option( 'page_on_front' ) === $page_id ) {
+		return true;
+	}
+
+	return 'home' === (string) get_post_field( 'post_name', $page_id );
+}
+
+/**
+ * Subtitle under the Home banner title.
+ *
+ * @return string
+ */
+function stillframe_home_subtitle() {
+	$page_id = (int) get_option( 'page_on_front' );
+	if ( $page_id ) {
+		$value = get_post_meta( $page_id, 'stillframe_subtitle', true );
+		if ( is_string( $value ) && '' !== $value ) {
+			return $value;
+		}
+	}
+
+	return (string) get_theme_mod( 'stillframe_vibe_line', '' );
+}
+
+/**
+ * Home description HTML from the front page editor.
+ *
+ * @return string
+ */
+function stillframe_home_intro_html() {
+	$page_id = (int) get_option( 'page_on_front' );
+	if ( $page_id ) {
+		$post = get_post( $page_id );
+		if ( $post instanceof WP_Post && '' !== trim( wp_strip_all_tags( (string) $post->post_content ) ) ) {
+			return apply_filters( 'the_content', $post->post_content );
+		}
+	}
+
+	$mod = trim( (string) get_theme_mod( 'stillframe_home_intro', '' ) );
+
+	return $mod ? wp_kses_post( wpautop( $mod ) ) : '';
+}
+
+/**
+ * A Contact page setting, with Customizer leftover as fallback.
+ *
+ * @param string $key     Meta / theme_mod key.
+ * @param string $default Fallback if both are empty.
+ * @return string
+ */
+function stillframe_contact_setting( $key, $default = '' ) {
+	$page = stillframe_get_section_page( 'contact' );
+
+	if ( $page instanceof WP_Post ) {
+		$value = get_post_meta( $page->ID, $key, true );
+		if ( is_string( $value ) && '' !== $value ) {
+			return $value;
+		}
+	}
+
+	$mod = get_theme_mod( $key, $default );
+
+	return is_string( $mod ) ? $mod : $default;
 }
 
 /**
@@ -453,7 +784,7 @@ function stillframe_body_class( $classes ) {
 
 	if ( is_front_page() ) {
 		$classes[] = 'vibe-home';
-	} elseif ( is_page( 'about' ) || is_page_template( 'template-about.php' ) ) {
+	} elseif ( is_page( 'about' ) || is_page_template( 'template-about.php' ) || ( is_singular( 'page' ) && stillframe_is_about_page( get_queried_object_id() ) ) ) {
 		$classes[] = 'vibe-about';
 	} elseif ( is_page( 'contact' ) || is_page_template( 'template-contact.php' ) ) {
 		$classes[] = 'vibe-contact';

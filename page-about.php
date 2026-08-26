@@ -16,9 +16,18 @@ get_header();
 		the_post();
 		?>
 		<article <?php post_class( 'about' ); ?>>
+			<?php
+			get_template_part(
+				'template-parts/section-hero',
+				null,
+				array(
+					'section' => 'about',
+					'title'   => get_the_title(),
+				)
+			);
+			?>
 			<div class="about__grid">
 				<div class="about__copy">
-					<h1 class="page-header__title reveal" data-reveal><?php the_title(); ?></h1>
 					<div class="prose reveal" data-reveal>
 						<?php the_content(); ?>
 					</div>

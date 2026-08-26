@@ -164,5 +164,63 @@ function stillframe_register_meta() {
 			},
 		)
 	);
+
+	register_post_meta(
+		'page',
+		'stillframe_banner_id',
+		array(
+			'type'              => 'integer',
+			'single'            => true,
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'absint',
+			'auth_callback'     => function () {
+				return current_user_can( 'edit_pages' );
+			},
+		)
+	);
+
+	register_post_meta(
+		'page',
+		'stillframe_subtitle',
+		array(
+			'type'              => 'string',
+			'single'            => true,
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'sanitize_text_field',
+			'auth_callback'     => function () {
+				return current_user_can( 'edit_pages' );
+			},
+		)
+	);
+
+	register_post_meta(
+		'page',
+		'stillframe_contact_email',
+		array(
+			'type'              => 'string',
+			'single'            => true,
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'sanitize_email',
+			'auth_callback'     => function () {
+				return current_user_can( 'edit_pages' );
+			},
+		)
+	);
+
+	foreach ( array( 'stillframe_linkedin', 'stillframe_instagram', 'stillframe_github' ) as $url_key ) {
+		register_post_meta(
+			'page',
+			$url_key,
+			array(
+				'type'              => 'string',
+				'single'            => true,
+				'show_in_rest'      => true,
+				'sanitize_callback' => 'esc_url_raw',
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_pages' );
+				},
+			)
+		);
+	}
 }
 add_action( 'init', 'stillframe_register_meta' );

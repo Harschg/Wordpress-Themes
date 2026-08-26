@@ -46,7 +46,7 @@ function stillframe_handle_contact() {
 		exit;
 	}
 
-	$to = get_theme_mod( 'stillframe_contact_email', get_option( 'admin_email' ) );
+	$to = stillframe_contact_setting( 'stillframe_contact_email', get_option( 'admin_email' ) );
 
 	if ( ! is_email( $to ) ) {
 		$to = get_option( 'admin_email' );

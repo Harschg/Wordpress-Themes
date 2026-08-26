@@ -12,16 +12,28 @@ get_header();
 $github = get_post_meta( get_the_ID(), 'stillframe_github', true );
 $live   = get_post_meta( get_the_ID(), 'stillframe_live_url', true );
 $stack  = stillframe_project_stack( get_the_ID() );
+$face = get_the_post_thumbnail_url( get_the_ID(), 'stillframe-hero' );
+if ( ! $face ) {
+	$face = get_the_post_thumbnail_url( get_the_ID(), 'full' );
+}
 ?>
 
 <main id="content" class="site-main">
 	<?php
 	while ( have_posts() ) :
 		the_post();
+
+		get_template_part(
+			'template-parts/section-hero',
+			null,
+			array(
+				'title' => get_the_title(),
+				'image' => $face ? $face : '',
+			)
+		);
 		?>
 		<article <?php post_class( 'project-single page-shell' ); ?>>
 			<header class="project-single__header">
-				<h1 class="page-header__title reveal" data-reveal><?php the_title(); ?></h1>
 				<?php if ( has_excerpt() ) : ?>
 					<p class="project-single__lede reveal" data-reveal><?php echo esc_html( get_the_excerpt() ); ?></p>
 				<?php endif; ?>
@@ -47,12 +59,6 @@ $stack  = stillframe_project_stack( get_the_ID() );
 					<?php endif; ?>
 				</div>
 			</header>
-
-			<?php if ( has_post_thumbnail() ) : ?>
-				<figure class="project-single__hero reveal" data-reveal>
-					<?php the_post_thumbnail( 'stillframe-hero', array( 'class' => 'project-single__image' ) ); ?>
-				</figure>
-			<?php endif; ?>
 
 			<div class="prose reveal" data-reveal>
 				<?php the_content(); ?>
