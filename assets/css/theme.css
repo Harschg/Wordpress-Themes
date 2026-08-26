@@ -535,6 +535,23 @@ body.is-ready .site-footer {
 	align-items: start;
 }
 
+.about__grid:not(:has(.about__portrait)) {
+	grid-template-columns: 1fr;
+}
+
+.about__copy {
+	display: flex;
+	justify-content: center;
+	padding-inline: clamp(1.25rem, 6vw, 4rem);
+}
+
+.about__copy .prose {
+	width: min(58rem, 100%);
+	max-width: 58rem;
+	margin-inline: auto;
+	text-align: left;
+}
+
 .about__portrait {
 	margin: 0;
 	overflow: hidden;
