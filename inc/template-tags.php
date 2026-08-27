@@ -801,3 +801,34 @@ function stillframe_body_class( $classes ) {
 	return $classes;
 }
 add_filter( 'body_class', 'stillframe_body_class' );
+
+/**
+ * Give About headings ids so the resume can jump to them.
+ *
+ * @param string $content Page content.
+ * @return string
+ */
+function stillframe_about_heading_ids( $content ) {
+	if ( is_admin() || ! is_singular( 'page' ) || ! stillframe_is_about_page() ) {
+		return $content;
+	}
+
+	return preg_replace_callback(
+		'/<h([2-4])(\s[^>]*)?>(.*?)<\/h\1>/is',
+		function ( $match ) {
+			$attrs = isset( $match[2] ) ? $match[2] : '';
+			if ( preg_match( '/\sid\s*=/', $attrs ) ) {
+				return $match[0];
+			}
+
+			$id = sanitize_title( wp_strip_all_tags( $match[3] ) );
+			if ( '' === $id ) {
+				return $match[0];
+			}
+
+			return '<h' . $match[1] . $attrs . ' id="' . esc_attr( $id ) . '">' . $match[3] . '</h' . $match[1] . '>';
+		},
+		$content
+	);
+}
+add_filter( 'the_content', 'stillframe_about_heading_ids', 12 );

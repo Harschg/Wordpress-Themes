@@ -43,7 +43,7 @@ $stack = stillframe_project_stack( get_the_ID() );
 					<?php endforeach; ?>
 				</ul>
 			<?php endif; ?>
-			<span class="project-card__cta"><?php esc_html_e( 'View project', 'stillframe' ); ?> →</span>
+			<span class="project-card__cta"><?php esc_html_e( 'View project', 'stillframe' ); ?> <span class="project-card__cta-arrow" aria-hidden="true">→</span></span>
 		</div>
 	</a>
 </article>

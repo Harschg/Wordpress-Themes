@@ -128,11 +128,40 @@ function stillframe_enqueue_resume_pdf() {
 		true
 	);
 
+	$projects = array();
+	foreach (
+		get_posts(
+			array(
+				'post_type'      => 'project',
+				'post_status'    => 'publish',
+				'posts_per_page' => 30,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		) as $project
+	) {
+		if ( ! $project instanceof WP_Post ) {
+			continue;
+		}
+
+		$projects[] = array(
+			'label' => $project->post_title,
+			'url'   => get_permalink( $project ),
+		);
+	}
+
 	wp_localize_script(
 		'stillframe-resume-pdf',
 		'stillframeResumePdf',
 		array(
 			'workerSrc' => $pdfjs . '/pdf.worker.min.js',
+			'about'     => stillframe_page_url( 'about' ),
+			'projects'  => get_post_type_archive_link( 'project' ),
+			'gallery'   => get_post_type_archive_link( 'photograph' ),
+			'contact'   => stillframe_page_url( 'contact' ),
+			'github'    => stillframe_contact_setting( 'stillframe_github' ),
+			'linkedin'  => stillframe_contact_setting( 'stillframe_linkedin', 'https://www.linkedin.com/in/grant-harsch' ),
+			'projectItems' => $projects,
 		)
 	);
 }

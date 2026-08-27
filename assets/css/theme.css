@@ -552,6 +552,10 @@ body.is-ready .site-footer {
 	text-align: left;
 }
 
+.about__copy .prose :is(h1, h2, h3, h4) {
+	scroll-margin-top: calc(var(--header) + 0.75rem);
+}
+
 .about__portrait {
 	margin: 0;
 	overflow: hidden;
@@ -636,6 +640,7 @@ body.is-ready .site-footer {
 }
 
 .resume-embed__pdf-page {
+	position: relative;
 	background: #fff;
 	content-visibility: visible;
 }
@@ -650,6 +655,24 @@ body.is-ready .site-footer {
 	height: auto;
 	background: #fff;
 	content-visibility: visible;
+}
+
+.resume-embed__hotspot {
+	position: absolute;
+	z-index: 3;
+	border-radius: 3px;
+	box-sizing: border-box;
+	cursor: pointer;
+	text-indent: -9999px;
+	overflow: hidden;
+	background: transparent;
+	transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.resume-embed__hotspot:hover,
+.resume-embed__hotspot:focus-visible {
+	background: color-mix(in srgb, var(--accent) 22%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 /* --- contact --- */
@@ -1191,22 +1214,36 @@ body.is-ready .site-footer {
 }
 
 .project-card__cta {
-	display: inline-block;
-	margin-top: 0.75rem;
-	padding: 0.4rem 0.85rem;
-	border: 1px solid var(--line);
-	border-radius: 999px;
-	font-size: 0.68rem;
-	letter-spacing: 0.14em;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	margin-top: 0.7rem;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	font-size: 0.6rem;
+	letter-spacing: 0.18em;
 	text-transform: uppercase;
 	color: var(--accent);
-	transition: transform 0.4s var(--ease), border-color 0.4s var(--ease), background 0.4s var(--ease);
+	transition: color 0.35s var(--ease);
 }
 
-.project-card:hover .project-card__cta {
+.project-card__cta-arrow {
+	display: inline-block;
+	transition: transform 0.35s var(--ease);
+}
+
+.project-card:hover .project-card__cta,
+.project-card:focus-within .project-card__cta {
+	color: var(--accent-soft);
+	transform: none;
+	background: transparent;
+	border-color: transparent;
+}
+
+.project-card:hover .project-card__cta-arrow,
+.project-card:focus-within .project-card__cta-arrow {
 	transform: translateX(4px);
-	border-color: rgba(201, 163, 106, 0.45);
-	background: color-mix(in srgb, var(--bg-hover) 80%, transparent);
 }
 
 .stack-list {
