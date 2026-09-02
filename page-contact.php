@@ -21,17 +21,9 @@ $github    = stillframe_contact_setting( 'stillframe_github' );
 	while ( have_posts() ) :
 		the_post();
 		?>
+		<div class="page-glass">
 		<article <?php post_class( 'contact' ); ?>>
-			<?php
-			get_template_part(
-				'template-parts/section-hero',
-				null,
-				array(
-					'section' => 'contact',
-					'title'   => get_the_title(),
-				)
-			);
-			?>
+			<h1 class="archive-header__title reveal" data-reveal><?php the_title(); ?></h1>
 			<div class="contact__grid">
 				<div class="contact__intro">
 					<?php if ( get_the_content() ) : ?>
@@ -111,6 +103,7 @@ $github    = stillframe_contact_setting( 'stillframe_github' );
 				</div>
 			</div>
 		</article>
+		</div>
 	<?php endwhile; ?>
 </main>
 

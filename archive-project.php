@@ -11,18 +11,9 @@ get_header();
 ?>
 
 <main id="content" class="site-main">
-	<?php
-	get_template_part(
-		'template-parts/section-hero',
-		null,
-		array(
-			'section' => 'projects',
-			'title'   => __( 'Projects', 'stillframe' ),
-		)
-	);
-	?>
+	<div class="page-glass">
+		<h1 class="archive-header__title reveal" data-reveal><?php esc_html_e( 'Projects', 'stillframe' ); ?></h1>
 
-	<div class="page-shell">
 		<?php if ( have_posts() ) : ?>
 			<div class="project-grid">
 				<?php

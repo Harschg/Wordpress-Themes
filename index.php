@@ -11,6 +11,7 @@ get_header();
 ?>
 
 <main id="content" class="site-main">
+	<div class="page-glass">
 	<div class="page-shell">
 		<?php if ( have_posts() ) : ?>
 			<header class="archive-header reveal" data-reveal>
@@ -34,6 +35,7 @@ get_header();
 		<?php else : ?>
 			<?php get_template_part( 'template-parts/content', 'none' ); ?>
 		<?php endif; ?>
+	</div>
 	</div>
 </main>
 

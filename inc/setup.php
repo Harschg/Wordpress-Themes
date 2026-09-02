@@ -38,6 +38,7 @@ function stillframe_setup() {
 
 	add_image_size( 'stillframe-gallery', 900, 1200, false );
 	add_image_size( 'stillframe-hero', 1920, 1280, false );
+	add_image_size( 'stillframe-world', 2560, 1707, false );
 	add_image_size( 'stillframe-card', 800, 600, true );
 
 	register_nav_menus( array(
@@ -45,6 +46,28 @@ function stillframe_setup() {
 	) );
 }
 add_action( 'after_setup_theme', 'stillframe_setup' );
+
+/**
+ * Keep more pixels on large background uploads.
+ *
+ * @return int
+ */
+function stillframe_big_image_threshold() {
+	return 3840;
+}
+add_filter( 'big_image_size_threshold', 'stillframe_big_image_threshold' );
+
+/**
+ * Sharper JPEGs for generated sizes.
+ *
+ * @param int $quality Current quality.
+ * @return int
+ */
+function stillframe_jpeg_quality( $quality ) {
+	return max( (int) $quality, 90 );
+}
+add_filter( 'jpeg_quality', 'stillframe_jpeg_quality' );
+add_filter( 'wp_editor_set_quality', 'stillframe_jpeg_quality' );
 
 /**
  * Enqueue fonts, CSS, and motion scripts.

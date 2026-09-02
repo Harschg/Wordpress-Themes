@@ -15,6 +15,7 @@ get_header();
 	while ( have_posts() ) :
 		the_post();
 		?>
+		<div class="page-glass">
 		<article <?php post_class( 'page-shell page-article' ); ?>>
 			<header class="page-header reveal" data-reveal>
 				<h1 class="page-header__title"><?php the_title(); ?></h1>
@@ -29,6 +30,7 @@ get_header();
 				<?php the_content(); ?>
 			</div>
 		</article>
+		</div>
 	<?php endwhile; ?>
 </main>
 

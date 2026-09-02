@@ -30,18 +30,24 @@ function stillframe_add_meta_boxes( $post_type, $post ) {
 		'high'
 	);
 
-	if ( 'page' !== $post_type || ! $post instanceof WP_Post ) {
+	if ( ! $post instanceof WP_Post ) {
 		return;
 	}
 
-	add_meta_box(
-		'stillframe_page_banner',
-		__( 'Page banner', 'stillframe' ),
-		'stillframe_render_banner_meta_box',
-		'page',
-		'side',
-		'high'
-	);
+	if ( 'page' === $post_type || 'project' === $post_type ) {
+		add_meta_box(
+			'stillframe_page_banner',
+			__( 'Background image', 'stillframe' ),
+			'stillframe_render_banner_meta_box',
+			$post_type,
+			'side',
+			'high'
+		);
+	}
+
+	if ( 'page' !== $post_type ) {
+		return;
+	}
 
 	if ( stillframe_is_home_page( $post->ID ) ) {
 		add_meta_box(
@@ -117,7 +123,7 @@ function stillframe_render_project_meta_box( $post ) {
 	$github = get_post_meta( $post->ID, 'stillframe_github', true );
 	$live   = get_post_meta( $post->ID, 'stillframe_live_url', true );
 	?>
-	<p><?php esc_html_e( 'Featured image is the banner at the top of the project.', 'stillframe' ); ?></p>
+	<p><?php esc_html_e( 'Featured image is the card picture. Upload a background image if you want a different photo behind the page.', 'stillframe' ); ?></p>
 	<p>
 		<label for="stillframe_stack"><?php esc_html_e( 'Stack (comma separated)', 'stillframe' ); ?></label>
 		<input type="text" class="widefat" id="stillframe_stack" name="stillframe_stack" value="<?php echo esc_attr( $stack ); ?>" placeholder="PHP, WordPress, CSS" />
@@ -215,7 +221,7 @@ function stillframe_render_resume_meta_box( $post ) {
 }
 
 /**
- * Page banner image (About, Contact, Home).
+ * Page background image.
  *
  * @param WP_Post $post Current post.
  */
@@ -234,18 +240,20 @@ function stillframe_render_banner_meta_box( $post ) {
 	?>
 	<p>
 		<?php
-		if ( stillframe_is_about_page( (int) $post->ID ) ) {
-			esc_html_e( 'Wide photo at the top of About. Featured image stays the portrait beside your bio. Choosing a file saves it right away.', 'stillframe' );
+		if ( 'project' === $post->post_type ) {
+			esc_html_e( 'Full-screen photo behind this project. If you skip this, the featured image is used. Choosing a file saves it right away.', 'stillframe' );
+		} elseif ( stillframe_is_about_page( (int) $post->ID ) ) {
+			esc_html_e( 'Full-screen photo behind About. Featured image stays the portrait beside your bio. Choosing a file saves it right away.', 'stillframe' );
 		} elseif ( (int) get_option( 'page_on_front' ) === (int) $post->ID ) {
-			esc_html_e( 'Wide photo at the top of Home. Choosing a file saves it right away.', 'stillframe' );
+			esc_html_e( 'Full-screen photo behind Home. Choosing a file saves it right away.', 'stillframe' );
 		} elseif ( stillframe_is_contact_page( (int) $post->ID ) ) {
-			esc_html_e( 'Wide photo at the top of Contact. Choosing a file saves it right away.', 'stillframe' );
+			esc_html_e( 'Full-screen photo behind Contact. Choosing a file saves it right away.', 'stillframe' );
 		} elseif ( 'gallery' === $post->post_name || 0 === strpos( (string) $post->post_name, 'gallery-' ) ) {
-			esc_html_e( 'Wide photo at the top of Gallery. Choosing a file saves it right away.', 'stillframe' );
+			esc_html_e( 'Full-screen photo behind Gallery. Choosing a file saves it right away.', 'stillframe' );
 		} elseif ( 'projects' === $post->post_name || 0 === strpos( (string) $post->post_name, 'projects-' ) ) {
-			esc_html_e( 'Wide photo at the top of Projects. Choosing a file saves it right away.', 'stillframe' );
+			esc_html_e( 'Full-screen photo behind Projects. Choosing a file saves it right away.', 'stillframe' );
 		} else {
-			esc_html_e( 'Wide photo at the top of this page. Choosing a file saves it right away.', 'stillframe' );
+			esc_html_e( 'Full-screen photo behind this page. Choosing a file saves it right away.', 'stillframe' );
 		}
 		?>
 	</p>
@@ -271,7 +279,7 @@ function stillframe_render_home_meta_box( $post ) {
 	?>
 	<p><?php esc_html_e( 'Write the site description in the page editor. It shows on the left, beside the page buttons.', 'stillframe' ); ?></p>
 	<p>
-		<label for="stillframe_subtitle"><?php esc_html_e( 'Banner subtitle', 'stillframe' ); ?></label>
+		<label for="stillframe_subtitle"><?php esc_html_e( 'Subtitle', 'stillframe' ); ?></label>
 		<input type="text" class="widefat" id="stillframe_subtitle" name="stillframe_subtitle" value="<?php echo esc_attr( $subtitle ); ?>" />
 	</p>
 	<?php
@@ -396,18 +404,9 @@ function stillframe_resume_admin_assets( $hook ) {
 	}
 
 	$screen = get_current_screen();
-	if ( ! $screen || 'page' !== $screen->post_type ) {
+	if ( ! $screen || ! in_array( $screen->post_type, array( 'page', 'project' ), true ) ) {
 		return;
 	}
-
-	wp_enqueue_media();
-	wp_enqueue_script(
-		'stillframe-admin-resume',
-		get_template_directory_uri() . '/assets/js/admin-resume.js',
-		array( 'jquery' ),
-		STILLFRAME_VERSION,
-		true
-	);
 
 	$post_id = 0;
 	if ( isset( $_GET['post'] ) ) {
@@ -416,15 +415,27 @@ function stillframe_resume_admin_assets( $hook ) {
 		$post_id = (int) $GLOBALS['post']->ID;
 	}
 
-	wp_localize_script(
-		'stillframe-admin-resume',
-		'stillframeResume',
-		array(
-			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'nonce'   => wp_create_nonce( 'stillframe_save_resume' ),
-			'postId'  => $post_id,
-		)
-	);
+	wp_enqueue_media();
+
+	if ( 'page' === $screen->post_type ) {
+		wp_enqueue_script(
+			'stillframe-admin-resume',
+			get_template_directory_uri() . '/assets/js/admin-resume.js',
+			array( 'jquery' ),
+			STILLFRAME_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'stillframe-admin-resume',
+			'stillframeResume',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'stillframe_save_resume' ),
+				'postId'  => $post_id,
+			)
+		);
+	}
 
 	wp_enqueue_script(
 		'stillframe-admin-banner',
@@ -456,7 +467,7 @@ function stillframe_save_banner_meta( $post_id ) {
 		return;
 	}
 
-	if ( 'page' !== get_post_type( $post_id ) ) {
+	if ( ! in_array( get_post_type( $post_id ), array( 'page', 'project' ), true ) ) {
 		return;
 	}
 
@@ -499,7 +510,7 @@ function stillframe_ajax_save_banner() {
 		wp_send_json_error();
 	}
 
-	if ( 'page' !== get_post_type( $post_id ) ) {
+	if ( ! in_array( get_post_type( $post_id ), array( 'page', 'project' ), true ) ) {
 		wp_send_json_error();
 	}
 

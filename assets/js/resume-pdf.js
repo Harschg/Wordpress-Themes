@@ -161,6 +161,23 @@
 		return value.split(" ").length <= 5;
 	}
 
+	function opensInNewTab(href) {
+		if (!href || href.charAt(0) === "#") {
+			return false;
+		}
+
+		if (/linkedin\.com|github\.com|instagram\.com/i.test(href)) {
+			return true;
+		}
+
+		try {
+			var url = new URL(href, window.location.href);
+			return url.origin !== window.location.origin;
+		} catch (error) {
+			return false;
+		}
+	}
+
 	function addHotspot(wrapper, viewport, box, href, label) {
 		if (!href || !box) {
 			return;
@@ -181,6 +198,11 @@
 		link.style.top = Math.max(0, box.y * scale - pad) + "px";
 		link.style.width = Math.max(28, box.w * scale + pad * 2) + "px";
 		link.style.height = Math.max(16, box.h * scale + pad * 2) + "px";
+
+		if (opensInNewTab(href)) {
+			link.target = "_blank";
+			link.rel = "noopener noreferrer";
+		}
 
 		if (href.charAt(0) === "#") {
 			link.addEventListener("click", function (event) {

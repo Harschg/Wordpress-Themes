@@ -102,4 +102,118 @@
 			}
 		});
 	}
+
+	var world = document.querySelector(".page-world");
+	var worldImg = world ? world.querySelector("img") : null;
+	var finePointer = window.matchMedia("(pointer: fine)").matches;
+
+	function showWorld() {
+		if (worldImg) {
+			worldImg.classList.add("is-in");
+		}
+	}
+
+	if (worldImg) {
+		if (reduced) {
+			showWorld();
+		} else if (worldImg.complete && worldImg.naturalWidth) {
+			window.requestAnimationFrame(function () {
+				window.requestAnimationFrame(showWorld);
+			});
+		} else {
+			worldImg.addEventListener("load", showWorld);
+			worldImg.addEventListener("error", showWorld);
+		}
+	}
+
+	if (world && !reduced) {
+		var mouseX = 0;
+		var mouseY = 0;
+		var scrollShift = 0;
+		var currentX = 0;
+		var currentY = 0;
+		var mouseRange = 22;
+		var scrollRange = 36;
+
+		function updateScrollShift() {
+			var scrollable = document.documentElement.scrollHeight - window.innerHeight;
+			var progress = scrollable > 0 ? window.scrollY / scrollable : 0;
+			progress = Math.max(0, Math.min(1, progress));
+			scrollShift = (progress - 0.5) * 2 * scrollRange;
+		}
+
+		if (finePointer) {
+			window.addEventListener(
+				"pointermove",
+				function (event) {
+					var midX = window.innerWidth / 2;
+					var midY = window.innerHeight / 2;
+					mouseX = ((event.clientX - midX) / midX) * mouseRange;
+					mouseY = ((event.clientY - midY) / midY) * mouseRange;
+				},
+				{ passive: true }
+			);
+		}
+
+		window.addEventListener("scroll", updateScrollShift, { passive: true });
+		window.addEventListener("resize", updateScrollShift);
+		updateScrollShift();
+
+		function followWorld() {
+			var targetX = mouseX;
+			var targetY = mouseY + scrollShift;
+			currentX += (targetX - currentX) * 0.05;
+			currentY += (targetY - currentY) * 0.05;
+			world.style.setProperty("--world-x", currentX.toFixed(2) + "px");
+			world.style.setProperty("--world-y", currentY.toFixed(2) + "px");
+			window.requestAnimationFrame(followWorld);
+		}
+
+		window.requestAnimationFrame(followWorld);
+	}
+
+	var toc = document.querySelector("[data-about-toc]");
+	if (toc) {
+		var tocLinks = Array.prototype.slice.call(toc.querySelectorAll('a[href^="#"]'));
+		var tocTargets = tocLinks
+			.map(function (link) {
+				return document.getElementById(link.getAttribute("href").slice(1));
+			})
+			.filter(Boolean);
+
+		function setTocCurrent(id) {
+			tocLinks.forEach(function (link) {
+				var match = link.getAttribute("href") === "#" + id;
+				link.classList.toggle("is-current", match);
+				if (match) {
+					link.setAttribute("aria-current", "location");
+				} else {
+					link.removeAttribute("aria-current");
+				}
+			});
+		}
+
+		function updateToc() {
+			if (!tocTargets.length) {
+				return;
+			}
+
+			var line = Math.max(120, window.innerHeight * 0.28);
+			var current = tocTargets[0];
+
+			tocTargets.forEach(function (el) {
+				if (el.getBoundingClientRect().top <= line) {
+					current = el;
+				}
+			});
+
+			if (current && current.id) {
+				setTocCurrent(current.id);
+			}
+		}
+
+		window.addEventListener("scroll", updateToc, { passive: true });
+		window.addEventListener("resize", updateToc);
+		updateToc();
+	}
 })();

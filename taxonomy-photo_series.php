@@ -13,6 +13,7 @@ $term = get_queried_object();
 ?>
 
 <main id="content" class="site-main">
+	<div class="page-glass">
 	<div class="page-shell page-shell--wide">
 		<header class="archive-header reveal" data-reveal>
 			<h1 class="archive-header__title"><?php echo esc_html( $term instanceof WP_Term ? $term->name : get_the_archive_title() ); ?></h1>
@@ -49,6 +50,7 @@ $term = get_queried_object();
 		<?php else : ?>
 			<?php get_template_part( 'template-parts/content', 'none' ); ?>
 		<?php endif; ?>
+	</div>
 	</div>
 </main>
 

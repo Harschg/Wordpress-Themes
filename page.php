@@ -15,6 +15,7 @@ get_header();
 	while ( have_posts() ) :
 		the_post();
 		?>
+		<div class="page-glass">
 		<article <?php post_class( 'page-shell page-article' ); ?>>
 			<header class="page-header reveal" data-reveal>
 				<h1 class="page-header__title"><?php the_title(); ?></h1>
@@ -24,6 +25,7 @@ get_header();
 			</div>
 			<?php get_template_part( 'template-parts/resume' ); ?>
 		</article>
+		</div>
 	<?php endwhile; ?>
 </main>
 

@@ -180,6 +180,20 @@ function stillframe_register_meta() {
 	);
 
 	register_post_meta(
+		'project',
+		'stillframe_banner_id',
+		array(
+			'type'              => 'integer',
+			'single'            => true,
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'absint',
+			'auth_callback'     => function () {
+				return current_user_can( 'edit_posts' );
+			},
+		)
+	);
+
+	register_post_meta(
 		'page',
 		'stillframe_subtitle',
 		array(

@@ -29,7 +29,7 @@ if ( $is_word ) {
 	$url = 'https://view.officeapps.live.com/op/embed.aspx?src=' . rawurlencode( $url );
 }
 ?>
-<section class="resume-embed">
+<section id="resume" class="resume-embed">
 	<span class="resume-embed__roll resume-embed__roll--top" aria-hidden="true"></span>
 	<div class="resume-embed__sheet">
 		<?php if ( $is_image ) : ?>

@@ -178,41 +178,168 @@ function stillframe_nav_item_is_current( $key ) {
 }
 
 /**
- * Banner image URL for a site section.
+ * Largest available URL for an attachment (original upload, not the scaled copy).
  *
- * Page banner first, then an older Customizer upload, then the theme default file.
- *
- * @param string $section home|about|gallery|projects|contact.
+ * @param int $attachment_id Attachment ID.
  * @return string
  */
-function stillframe_section_hero_url( $section ) {
+function stillframe_largest_attachment_url( $attachment_id ) {
+	$attachment_id = (int) $attachment_id;
+	if ( ! $attachment_id || ! wp_attachment_is_image( $attachment_id ) ) {
+		return '';
+	}
+
+	if ( function_exists( 'wp_get_original_image_url' ) ) {
+		$original = wp_get_original_image_url( $attachment_id );
+		if ( $original ) {
+			return $original;
+		}
+	}
+
+	$url = wp_get_attachment_image_url( $attachment_id, 'full' );
+
+	return $url ? $url : '';
+}
+
+/**
+ * Background source for a site section.
+ *
+ * @param string $section home|about|gallery|projects|contact.
+ * @return array{id:int, url:string}
+ */
+function stillframe_section_world_source( $section ) {
 	$section = sanitize_key( $section );
 	$page_id = stillframe_section_banner_page_id( $section );
 
 	if ( $page_id ) {
-		$from_page = stillframe_banner_url_from_page( $page_id );
-		if ( $from_page ) {
-			return $from_page;
+		$banner_id = (int) get_post_meta( $page_id, 'stillframe_banner_id', true );
+		$url       = stillframe_largest_attachment_url( $banner_id );
+		if ( $url ) {
+			return array(
+				'id'  => $banner_id,
+				'url' => $url,
+			);
 		}
 	}
 
 	$mod_id = (int) get_theme_mod( 'stillframe_hero_' . $section, 0 );
-
-	if ( $mod_id ) {
-		$url = wp_get_attachment_image_url( $mod_id, 'full' );
-		if ( $url ) {
-			return $url;
-		}
+	$url    = stillframe_largest_attachment_url( $mod_id );
+	if ( $url ) {
+		return array(
+			'id'  => $mod_id,
+			'url' => $url,
+		);
 	}
 
 	$relative = 'assets/images/' . $section . '-hero.jpg';
 	$path     = get_template_directory() . '/' . $relative;
 
 	if ( is_readable( $path ) ) {
-		return get_template_directory_uri() . '/' . $relative . '?ver=' . STILLFRAME_VERSION;
+		return array(
+			'id'  => 0,
+			'url' => get_template_directory_uri() . '/' . $relative . '?ver=' . STILLFRAME_VERSION,
+		);
 	}
 
-	return '';
+	return array(
+		'id'  => 0,
+		'url' => '',
+	);
+}
+
+/**
+ * Banner image URL for a site section.
+ *
+ * @param string $section home|about|gallery|projects|contact.
+ * @return string
+ */
+function stillframe_section_hero_url( $section ) {
+	$source = stillframe_section_world_source( $section );
+
+	return $source['url'];
+}
+
+/**
+ * Attachment and URL for the full-bleed page background.
+ *
+ * @return array{id:int, url:string}
+ */
+function stillframe_page_world_source() {
+	$empty = array(
+		'id'  => 0,
+		'url' => '',
+	);
+
+	if ( is_singular( 'photograph' ) ) {
+		return $empty;
+	}
+
+	if ( is_singular( 'project' ) ) {
+		$post_id   = (int) get_queried_object_id();
+		$banner_id = (int) get_post_meta( $post_id, 'stillframe_banner_id', true );
+		$url       = stillframe_largest_attachment_url( $banner_id );
+		if ( $url ) {
+			return array(
+				'id'  => $banner_id,
+				'url' => $url,
+			);
+		}
+
+		$thumb_id = (int) get_post_thumbnail_id( $post_id );
+		$url      = stillframe_largest_attachment_url( $thumb_id );
+		if ( $url ) {
+			return array(
+				'id'  => $thumb_id,
+				'url' => $url,
+			);
+		}
+
+		return stillframe_section_world_source( 'projects' );
+	}
+
+	if ( is_singular( 'page' ) ) {
+		$banner_id = (int) get_post_meta( (int) get_queried_object_id(), 'stillframe_banner_id', true );
+		$url       = stillframe_largest_attachment_url( $banner_id );
+		if ( $url ) {
+			return array(
+				'id'  => $banner_id,
+				'url' => $url,
+			);
+		}
+	}
+
+	if ( is_front_page() ) {
+		return stillframe_section_world_source( 'home' );
+	}
+
+	if ( is_singular( 'page' ) && stillframe_is_about_page( (int) get_queried_object_id() ) ) {
+		return stillframe_section_world_source( 'about' );
+	}
+
+	if ( is_singular( 'page' ) && stillframe_is_contact_page( (int) get_queried_object_id() ) ) {
+		return stillframe_section_world_source( 'contact' );
+	}
+
+	if ( is_post_type_archive( 'photograph' ) || is_tax( 'photo_series' ) ) {
+		return stillframe_section_world_source( 'gallery' );
+	}
+
+	if ( is_post_type_archive( 'project' ) ) {
+		return stillframe_section_world_source( 'projects' );
+	}
+
+	return stillframe_section_world_source( 'home' );
+}
+
+/**
+ * Full-bleed photo behind the glass HUD.
+ *
+ * @return string
+ */
+function stillframe_page_world_url() {
+	$source = stillframe_page_world_source();
+
+	return $source['url'];
 }
 
 /**
@@ -271,9 +398,7 @@ function stillframe_banner_url_from_page( $page_id ) {
 		return '';
 	}
 
-	$url = wp_get_attachment_image_url( $banner_id, 'full' );
-
-	return $url ? $url : '';
+	return stillframe_largest_attachment_url( $banner_id );
 }
 
 /**
@@ -782,6 +907,10 @@ add_action( 'pre_get_posts', 'stillframe_gallery_query' );
 function stillframe_body_class( $classes ) {
 	$classes[] = 'has-page-motion';
 
+	if ( stillframe_page_world_url() ) {
+		$classes[] = 'has-page-world';
+	}
+
 	if ( is_front_page() ) {
 		$classes[] = 'vibe-home';
 	} elseif ( is_page( 'about' ) || is_page_template( 'template-about.php' ) || ( is_singular( 'page' ) && stillframe_is_about_page( get_queried_object_id() ) ) ) {
@@ -803,6 +932,98 @@ function stillframe_body_class( $classes ) {
 add_filter( 'body_class', 'stillframe_body_class' );
 
 /**
+ * Headings in HTML content, with ids matching stillframe_about_heading_ids().
+ *
+ * @param string $content HTML.
+ * @param int    $min_level 2–4.
+ * @param int    $max_level 2–4.
+ * @return array<int, array{id:string, title:string, level:int}>
+ */
+function stillframe_content_headings( $content, $min_level = 2, $max_level = 3 ) {
+	$items = array();
+	if ( ! $content ) {
+		return $items;
+	}
+
+	$min_level = max( 2, min( 4, (int) $min_level ) );
+	$max_level = max( $min_level, min( 4, (int) $max_level ) );
+	$used      = array();
+
+	if ( ! preg_match_all( '/<h([2-4])(\s[^>]*)?>(.*?)<\/h\1>/is', $content, $matches, PREG_SET_ORDER ) ) {
+		return $items;
+	}
+
+	foreach ( $matches as $match ) {
+		$level = (int) $match[1];
+		if ( $level < $min_level || $level > $max_level ) {
+			continue;
+		}
+
+		$title = trim( wp_strip_all_tags( $match[3] ) );
+		if ( '' === $title ) {
+			continue;
+		}
+
+		$attrs = isset( $match[2] ) ? $match[2] : '';
+		$id    = '';
+		if ( preg_match( '/\sid\s*=\s*([\'"])([^\'"]+)\1/i', $attrs, $id_match ) ) {
+			$id = sanitize_title( $id_match[2] );
+		}
+		if ( '' === $id ) {
+			$id = sanitize_title( $title );
+		}
+		if ( '' === $id ) {
+			continue;
+		}
+
+		$base = $id;
+		$n    = 2;
+		while ( isset( $used[ $id ] ) ) {
+			$id = $base . '-' . $n;
+			++$n;
+		}
+		$used[ $id ] = true;
+
+		$items[] = array(
+			'id'    => $id,
+			'title' => $title,
+			'level' => $level,
+		);
+	}
+
+	return $items;
+}
+
+/**
+ * Jump links for the About table of contents.
+ *
+ * @param int $post_id Page ID.
+ * @return array<int, array{id:string, title:string, level:int}>
+ */
+function stillframe_about_toc_items( $post_id = 0 ) {
+	$post_id = $post_id ? (int) $post_id : (int) get_the_ID();
+	$post    = get_post( $post_id );
+	$items   = array();
+
+	if ( $post instanceof WP_Post ) {
+		$items = stillframe_content_headings( (string) $post->post_content, 2, 3 );
+		if ( ! $items ) {
+			$items = stillframe_content_headings( (string) $post->post_content, 2, 4 );
+		}
+	}
+
+	if ( stillframe_resume_attachment_id( $post_id ) ) {
+		$items[] = array(
+			'id'    => 'resume',
+			'title' => __( 'Resume', 'stillframe' ),
+			'level' => 2,
+		);
+	}
+
+	return $items;
+}
+
+/**
  * Give About headings ids so the resume can jump to them.
  *
  * @param string $content Page content.
@@ -813,9 +1034,11 @@ function stillframe_about_heading_ids( $content ) {
 		return $content;
 	}
 
+	$used = array();
+
 	return preg_replace_callback(
 		'/<h([2-4])(\s[^>]*)?>(.*?)<\/h\1>/is',
-		function ( $match ) {
+		function ( $match ) use ( &$used ) {
 			$attrs = isset( $match[2] ) ? $match[2] : '';
 			if ( preg_match( '/\sid\s*=/', $attrs ) ) {
 				return $match[0];
@@ -825,6 +1048,14 @@ function stillframe_about_heading_ids( $content ) {
 			if ( '' === $id ) {
 				return $match[0];
 			}
+
+			$base = $id;
+			$n    = 2;
+			while ( isset( $used[ $id ] ) ) {
+				$id = $base . '-' . $n;
+				++$n;
+			}
+			$used[ $id ] = true;
 
 			return '<h' . $match[1] . $attrs . ' id="' . esc_attr( $id ) . '">' . $match[3] . '</h' . $match[1] . '>';
 		},
