@@ -40,9 +40,19 @@ get_header();
 								<?php the_content(); ?>
 							</div>
 						</div>
-						<?php if ( has_post_thumbnail() ) : ?>
+						<?php
+						$portrait = stillframe_attachment_img(
+							(int) get_post_thumbnail_id(),
+							array(
+								'class'         => 'about__image',
+								'alt'           => get_the_title(),
+								'fetchpriority' => 'high',
+							)
+						);
+						if ( $portrait ) :
+							?>
 							<figure class="about__portrait reveal" data-reveal>
-								<?php the_post_thumbnail( 'stillframe-hero', array( 'class' => 'about__image' ) ); ?>
+								<?php echo $portrait; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stillframe_attachment_img() ?>
 							</figure>
 						<?php endif; ?>
 					</div>

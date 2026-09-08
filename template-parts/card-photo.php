@@ -18,18 +18,12 @@ $tall     = 0 === $index % 3;
 
 <article <?php post_class( 'photo-card' ); ?>>
 	<a class="photo-card__link" href="<?php the_permalink(); ?>">
-		<?php if ( has_post_thumbnail() ) : ?>
+		<?php
+		$thumb = stillframe_get_card_image( get_the_ID(), 'stillframe-gallery', 'photo-card__image' );
+		if ( $thumb ) :
+			?>
 			<div class="photo-card__media <?php echo $tall ? 'photo-card__media--tall' : ''; ?>">
-				<?php
-				the_post_thumbnail(
-					'stillframe-gallery',
-					array(
-						'class'    => 'photo-card__image',
-						'loading'  => 'eager',
-						'alt'      => the_title_attribute( array( 'echo' => false ) ),
-					)
-				);
-				?>
+				<?php echo $thumb; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() ?>
 			</div>
 		<?php else : ?>
 			<div class="photo-card__media photo-card__media--empty"></div>

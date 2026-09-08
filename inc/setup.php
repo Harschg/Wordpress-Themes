@@ -70,6 +70,45 @@ add_filter( 'jpeg_quality', 'stillframe_jpeg_quality' );
 add_filter( 'wp_editor_set_quality', 'stillframe_jpeg_quality' );
 
 /**
+ * Do not emit srcset on the front end.
+ *
+ * WordPress lists every registered size. Missing stillframe-card / stillframe-gallery
+ * files 404 and the browser shows a grey box instead of the photo.
+ *
+ * @param array|false $sources Srcset candidates.
+ * @return array|false
+ */
+function stillframe_front_srcset( $sources ) {
+	if ( is_admin() ) {
+		return $sources;
+	}
+
+	return false;
+}
+add_filter( 'wp_calculate_image_srcset', 'stillframe_front_srcset' );
+
+/**
+ * Strip srcset/sizes WordPress adds to img tags in content.
+ *
+ * @param array $attr Image attributes.
+ * @return array
+ */
+function stillframe_front_image_attributes( $attr ) {
+	if ( is_admin() ) {
+		return $attr;
+	}
+
+	unset( $attr['srcset'], $attr['sizes'] );
+
+	if ( empty( $attr['loading'] ) ) {
+		$attr['loading'] = 'eager';
+	}
+
+	return $attr;
+}
+add_filter( 'wp_get_attachment_image_attributes', 'stillframe_front_image_attributes' );
+
+/**
  * Enqueue fonts, CSS, and motion scripts.
  */
 function stillframe_enqueue_assets() {

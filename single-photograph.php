@@ -24,9 +24,18 @@ $neighbors = stillframe_photograph_neighbors( get_the_ID() );
 		?>
 		<article <?php post_class( 'photo-single' ); ?>>
 			<figure class="photo-single__frame">
-				<?php if ( has_post_thumbnail() ) : ?>
-					<?php the_post_thumbnail( 'stillframe-hero', array( 'class' => 'photo-single__image' ) ); ?>
-				<?php endif; ?>
+				<?php
+				$photo = stillframe_post_img(
+					get_the_ID(),
+					'photo-single__image',
+					array(
+						'fetchpriority' => 'high',
+					)
+				);
+				if ( $photo ) :
+					echo $photo; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stillframe_post_img()
+				endif;
+				?>
 
 				<?php if ( $neighbors['prev'] || $neighbors['next'] ) : ?>
 					<nav class="photo-arrows" aria-label="<?php esc_attr_e( 'Photos', 'stillframe' ); ?>">

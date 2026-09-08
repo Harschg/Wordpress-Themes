@@ -114,15 +114,10 @@
 	}
 
 	if (worldImg) {
-		if (reduced) {
+		worldImg.addEventListener("load", showWorld);
+		worldImg.addEventListener("error", showWorld);
+		if (reduced || worldImg.complete) {
 			showWorld();
-		} else if (worldImg.complete && worldImg.naturalWidth) {
-			window.requestAnimationFrame(function () {
-				window.requestAnimationFrame(showWorld);
-			});
-		} else {
-			worldImg.addEventListener("load", showWorld);
-			worldImg.addEventListener("error", showWorld);
 		}
 	}
 

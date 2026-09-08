@@ -31,13 +31,18 @@ $url    = get_term_link( $term );
 	href="<?php echo esc_url( $url ); ?>"
 >
 	<div class="series-card__frames" aria-hidden="true">
-		<?php if ( $photos ) : ?>
-			<?php foreach ( $photos as $photo ) : ?>
-				<?php if ( has_post_thumbnail( $photo ) ) : ?>
-					<?php echo get_the_post_thumbnail( $photo, 'stillframe-card', array( 'class' => 'series-card__image' ) ); ?>
-				<?php endif; ?>
-			<?php endforeach; ?>
-		<?php else : ?>
+		<?php
+		$frames = 0;
+		foreach ( $photos as $photo ) {
+			$frame = stillframe_get_card_image( $photo->ID, 'stillframe-card', 'series-card__image' );
+			if ( ! $frame ) {
+				continue;
+			}
+			echo $frame; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image()
+			++$frames;
+		}
+		if ( ! $frames ) :
+			?>
 			<span class="series-card__empty"></span>
 		<?php endif; ?>
 	</div>

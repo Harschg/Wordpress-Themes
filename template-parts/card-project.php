@@ -17,18 +17,12 @@ $stack = stillframe_project_stack( get_the_ID() );
 
 <article <?php post_class( 'project-card reveal' ); ?> data-reveal data-stagger="<?php echo esc_attr( (string) min( $index, 8 ) ); ?>">
 	<a class="project-card__link" href="<?php the_permalink(); ?>">
-		<?php if ( has_post_thumbnail() ) : ?>
+		<?php
+		$thumb = stillframe_get_card_image( get_the_ID(), 'stillframe-card', 'project-card__image' );
+		if ( $thumb ) :
+			?>
 			<div class="project-card__media">
-				<?php
-				the_post_thumbnail(
-					'stillframe-card',
-					array(
-						'class'   => 'project-card__image',
-						'loading' => 'lazy',
-						'alt'     => the_title_attribute( array( 'echo' => false ) ),
-					)
-				);
-				?>
+				<?php echo $thumb; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() ?>
 			</div>
 		<?php endif; ?>
 		<div class="project-card__body">

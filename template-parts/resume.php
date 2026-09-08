@@ -34,10 +34,8 @@ if ( $is_word ) {
 	<div class="resume-embed__sheet">
 		<?php if ( $is_image ) : ?>
 			<?php
-			echo wp_get_attachment_image(
+			echo stillframe_attachment_img( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				$attachment_id,
-				'full',
-				false,
 				array(
 					'class' => 'resume-embed__image',
 					'alt'   => $alt,

@@ -178,7 +178,10 @@ function stillframe_nav_item_is_current( $key ) {
 }
 
 /**
- * Largest available URL for an attachment (original upload, not the scaled copy).
+ * Public URL for an attachment WordPress can actually serve.
+ *
+ * Uses the media library "full" file (often the -scaled.jpg), not the
+ * original camera file, which is sometimes not web-accessible.
  *
  * @param int $attachment_id Attachment ID.
  * @return string
@@ -189,16 +192,100 @@ function stillframe_largest_attachment_url( $attachment_id ) {
 		return '';
 	}
 
-	if ( function_exists( 'wp_get_original_image_url' ) ) {
-		$original = wp_get_original_image_url( $attachment_id );
-		if ( $original ) {
-			return $original;
-		}
+	$url = wp_get_attachment_image_url( $attachment_id, 'full' );
+	if ( $url ) {
+		return $url;
 	}
 
-	$url = wp_get_attachment_image_url( $attachment_id, 'full' );
+	$url = wp_get_attachment_url( $attachment_id );
 
 	return $url ? $url : '';
+}
+
+/**
+ * Front-end img tag with a single src WordPress can serve. No srcset.
+ *
+ * @param int   $attachment_id Attachment ID.
+ * @param array $args {
+ *     @type string $class         Class attribute.
+ *     @type string $alt           Alt text.
+ *     @type string $loading       lazy|eager.
+ *     @type string $decoding      async|auto|sync.
+ *     @type string $fetchpriority high|low|auto.
+ * }
+ * @return string
+ */
+function stillframe_attachment_img( $attachment_id, $args = array() ) {
+	$url = stillframe_largest_attachment_url( $attachment_id );
+	if ( ! $url ) {
+		return '';
+	}
+
+	$args = wp_parse_args(
+		$args,
+		array(
+			'class'          => '',
+			'alt'            => '',
+			'loading'        => 'eager',
+			'decoding'       => 'async',
+			'fetchpriority'  => '',
+		)
+	);
+
+	$meta   = wp_get_attachment_metadata( (int) $attachment_id );
+	$width  = ! empty( $meta['width'] ) ? (int) $meta['width'] : 1600;
+	$height = ! empty( $meta['height'] ) ? (int) $meta['height'] : 1067;
+
+	$atts = array(
+		'src'      => $url,
+		'alt'      => (string) $args['alt'],
+		'width'    => (string) $width,
+		'height'   => (string) $height,
+		'decoding' => (string) $args['decoding'],
+		'loading'  => (string) $args['loading'],
+	);
+
+	if ( $args['class'] ) {
+		$atts['class'] = (string) $args['class'];
+	}
+
+	if ( $args['fetchpriority'] ) {
+		$atts['fetchpriority'] = (string) $args['fetchpriority'];
+	}
+
+	$html = '<img';
+	foreach ( $atts as $name => $value ) {
+		$html .= ' ' . $name . '="' . esc_attr( $value ) . '"';
+	}
+	$html .= ' />';
+
+	return $html;
+}
+
+/**
+ * Img tag for a post card or featured photo.
+ *
+ * @param int    $post_id Post ID.
+ * @param string $class   Image class.
+ * @param array  $args    Extra stillframe_attachment_img() args.
+ * @return string
+ */
+function stillframe_post_img( $post_id, $class, $args = array() ) {
+	$attachment_id = stillframe_card_thumbnail_id( $post_id );
+	if ( ! $attachment_id ) {
+		$attachment_id = (int) get_post_thumbnail_id( $post_id );
+	}
+
+	if ( ! $attachment_id ) {
+		return '';
+	}
+
+	$args            = wp_parse_args( $args, array() );
+	$args['class']   = $class;
+	$args['alt']     = isset( $args['alt'] ) ? $args['alt'] : get_the_title( $post_id );
+	$args['loading'] = isset( $args['loading'] ) ? $args['loading'] : 'eager';
+
+	return stillframe_attachment_img( $attachment_id, $args );
 }
 
 /**
@@ -462,6 +549,76 @@ function stillframe_photo_series_terms() {
 }
 
 /**
+ * Image to show on a gallery or project card.
+ *
+ * Featured image first, then the page/project background upload, then an
+ * image attached to the post or placed in the editor.
+ *
+ * @param int $post_id Post ID.
+ * @return int
+ */
+function stillframe_card_thumbnail_id( $post_id ) {
+	$post_id = (int) $post_id;
+	if ( ! $post_id ) {
+		return 0;
+	}
+
+	$candidates = array(
+		(int) get_post_thumbnail_id( $post_id ),
+		(int) get_post_meta( $post_id, 'stillframe_banner_id', true ),
+	);
+
+	foreach ( $candidates as $attachment_id ) {
+		if ( $attachment_id && wp_attachment_is_image( $attachment_id ) ) {
+			return $attachment_id;
+		}
+	}
+
+	$attached = get_children(
+		array(
+			'post_parent'    => $post_id,
+			'post_type'      => 'attachment',
+			'post_mime_type' => 'image',
+			'posts_per_page' => 1,
+			'orderby'        => 'menu_order ID',
+			'order'          => 'ASC',
+			'fields'         => 'ids',
+		)
+	);
+
+	if ( $attached ) {
+		$attachment_id = (int) reset( $attached );
+		if ( $attachment_id && wp_attachment_is_image( $attachment_id ) ) {
+			return $attachment_id;
+		}
+	}
+
+	$post = get_post( $post_id );
+	if ( $post instanceof WP_Post && preg_match( '/wp-image-(\d+)/', (string) $post->post_content, $match ) ) {
+		$attachment_id = (int) $match[1];
+		if ( $attachment_id && wp_attachment_is_image( $attachment_id ) ) {
+			return $attachment_id;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * HTML for a card thumbnail.
+ *
+ * @param int    $post_id Post ID.
+ * @param string $size    Unused; kept so existing calls stay valid.
+ * @param string $class   Image class.
+ * @return string
+ */
+function stillframe_get_card_image( $post_id, $size, $class ) {
+	unset( $size );
+
+	return stillframe_post_img( $post_id, $class );
+}
+
+/**
  * Recent photographs in a series, for card previews.
  *
  * @param int $term_id Series term ID.
@@ -469,10 +626,11 @@ function stillframe_photo_series_terms() {
  * @return WP_Post[]
  */
 function stillframe_series_preview_photos( $term_id, $count = 3 ) {
+	$count = max( 1, (int) $count );
 	$posts = get_posts(
 		array(
 			'post_type'      => 'photograph',
-			'posts_per_page' => (int) $count,
+			'posts_per_page' => 24,
 			'orderby'        => 'title',
 			'order'          => 'ASC',
 			'no_found_rows'  => true,
@@ -486,7 +644,18 @@ function stillframe_series_preview_photos( $term_id, $count = 3 ) {
 		)
 	);
 
-	return $posts;
+	$with_image = array();
+
+	foreach ( $posts as $post ) {
+		if ( stillframe_card_thumbnail_id( $post->ID ) ) {
+			$with_image[] = $post;
+			if ( count( $with_image ) >= $count ) {
+				break;
+			}
+		}
+	}
+
+	return $with_image;
 }
 
 /**
@@ -915,7 +1084,7 @@ function stillframe_body_class( $classes ) {
 		$classes[] = 'vibe-home';
 	} elseif ( is_page( 'about' ) || is_page_template( 'template-about.php' ) || ( is_singular( 'page' ) && stillframe_is_about_page( get_queried_object_id() ) ) ) {
 		$classes[] = 'vibe-about';
-	} elseif ( is_page( 'contact' ) || is_page_template( 'template-contact.php' ) ) {
+	} elseif ( is_page( 'contact' ) || is_page_template( 'template-contact.php' ) || ( is_singular( 'page' ) && stillframe_is_contact_page( get_queried_object_id() ) ) ) {
 		$classes[] = 'vibe-contact';
 	} elseif ( is_post_type_archive( 'photograph' ) || is_tax( 'photo_series' ) || is_singular( 'photograph' ) ) {
 		$classes[] = 'vibe-gallery';

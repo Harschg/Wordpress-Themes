@@ -21,9 +21,12 @@ get_header();
 				<h1 class="page-header__title"><?php the_title(); ?></h1>
 				<p class="page-header__date"><?php echo esc_html( get_the_date() ); ?></p>
 			</header>
-			<?php if ( has_post_thumbnail() ) : ?>
+			<?php
+			$hero = stillframe_post_img( get_the_ID(), 'page-article__image' );
+			if ( $hero ) :
+				?>
 				<figure class="page-article__hero reveal" data-reveal>
-					<?php the_post_thumbnail( 'stillframe-hero' ); ?>
+					<?php echo $hero; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stillframe_post_img() ?>
 				</figure>
 			<?php endif; ?>
 			<div class="prose reveal" data-reveal>
