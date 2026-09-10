@@ -24,6 +24,42 @@ function stillframe_page_url( $slug ) {
 }
 
 /**
+ * Attachment ID for the header logo (custom logo, then site icon).
+ *
+ * @return int
+ */
+function stillframe_site_logo_id() {
+	$logo_id = (int) get_theme_mod( 'custom_logo' );
+	if ( $logo_id ) {
+		return $logo_id;
+	}
+
+	return (int) get_option( 'site_icon' );
+}
+
+/**
+ * Header logo img tag, using a URL WordPress can actually serve.
+ *
+ * @return string
+ */
+function stillframe_site_logo_img() {
+	$logo_id = stillframe_site_logo_id();
+	if ( ! $logo_id ) {
+		return '';
+	}
+
+	return stillframe_attachment_img(
+		$logo_id,
+		array(
+			'class'    => 'custom-logo',
+			'alt'      => '',
+			'loading'  => 'eager',
+			'decoding' => 'async',
+		)
+	);
+}
+
+/**
  * Find the WordPress page used for a section slug.
  *
  * Matches nested pages (not only /about/) and titles like "About Grant Harsch".
@@ -113,11 +149,6 @@ function stillframe_get_section_page( $slug ) {
 function stillframe_nav_items() {
 	return array(
 		array(
-			'key'   => 'home',
-			'url'   => home_url( '/' ),
-			'label' => __( 'Home', 'stillframe' ),
-		),
-		array(
 			'key'   => 'about',
 			'url'   => stillframe_page_url( 'about' ),
 			'label' => __( 'About', 'stillframe' ),
@@ -161,7 +192,15 @@ function stillframe_nav_item_is_current( $key ) {
 			}
 
 			$about = stillframe_get_section_page( 'about' );
-			return $about instanceof WP_Post && $page_id === (int) $about->ID;
+			if ( $about instanceof WP_Post && $page_id === (int) $about->ID ) {
+				return true;
+			}
+
+			if ( $about instanceof WP_Post && wp_get_post_parent_id( $page_id ) === (int) $about->ID ) {
+				return true;
+			}
+
+			return in_array( $page_id, stillframe_about_dropdown_page_ids(), true );
 		case 'gallery':
 			return is_post_type_archive( 'photograph' ) || is_tax( 'photo_series' ) || is_singular( 'photograph' );
 		case 'projects':
@@ -347,6 +386,82 @@ function stillframe_section_hero_url( $section ) {
 }
 
 /**
+ * Feature sections for a project: heading, copy, and optional photo.
+ *
+ * @param int $post_id Project ID.
+ * @return array<int, array{title:string, text:string, image_id:int}>
+ */
+function stillframe_project_features( $post_id ) {
+	$raw = get_post_meta( (int) $post_id, 'stillframe_project_features', true );
+
+	if ( is_string( $raw ) && '' !== $raw ) {
+		$decoded = json_decode( $raw, true );
+		$raw     = is_array( $decoded ) ? $decoded : maybe_unserialize( $raw );
+	}
+
+	if ( ! is_array( $raw ) ) {
+		return array();
+	}
+
+	$features = array();
+
+	foreach ( $raw as $row ) {
+		if ( ! is_array( $row ) ) {
+			continue;
+		}
+
+		$title    = isset( $row['title'] ) ? sanitize_text_field( $row['title'] ) : '';
+		$text     = isset( $row['text'] ) ? sanitize_textarea_field( $row['text'] ) : '';
+		$image_id = isset( $row['image_id'] ) ? absint( $row['image_id'] ) : 0;
+
+		if ( $image_id && ! stillframe_largest_attachment_url( $image_id ) ) {
+			$image_id = 0;
+		}
+
+		if ( '' === $title && '' === $text && ! $image_id ) {
+			continue;
+		}
+
+		$features[] = array(
+			'title'    => $title,
+			'text'     => $text,
+			'image_id' => $image_id,
+		);
+	}
+
+	return $features;
+}
+
+/**
+ * Full-bleed photo for a single project. Only images uploaded on that project.
+ *
+ * @param int $post_id Project ID.
+ * @return array{id:int, url:string}
+ */
+function stillframe_project_world_source( $post_id ) {
+	$post_id = (int) $post_id;
+	$ids     = array(
+		(int) get_post_meta( $post_id, 'stillframe_banner_id', true ),
+		(int) get_post_thumbnail_id( $post_id ),
+	);
+
+	foreach ( $ids as $attachment_id ) {
+		$url = stillframe_largest_attachment_url( $attachment_id );
+		if ( $url ) {
+			return array(
+				'id'  => $attachment_id,
+				'url' => $url,
+			);
+		}
+	}
+
+	return array(
+		'id'  => 0,
+		'url' => '',
+	);
+}
+
+/**
  * Attachment and URL for the full-bleed page background.
  *
  * @return array{id:int, url:string}
@@ -362,26 +477,7 @@ function stillframe_page_world_source() {
 	}
 
 	if ( is_singular( 'project' ) ) {
-		$post_id   = (int) get_queried_object_id();
-		$banner_id = (int) get_post_meta( $post_id, 'stillframe_banner_id', true );
-		$url       = stillframe_largest_attachment_url( $banner_id );
-		if ( $url ) {
-			return array(
-				'id'  => $banner_id,
-				'url' => $url,
-			);
-		}
-
-		$thumb_id = (int) get_post_thumbnail_id( $post_id );
-		$url      = stillframe_largest_attachment_url( $thumb_id );
-		if ( $url ) {
-			return array(
-				'id'  => $thumb_id,
-				'url' => $url,
-			);
-		}
-
-		return stillframe_section_world_source( 'projects' );
+		return stillframe_project_world_source( (int) get_queried_object_id() );
 	}
 
 	if ( is_singular( 'page' ) ) {
@@ -489,6 +585,281 @@ function stillframe_banner_url_from_page( $page_id ) {
 }
 
 /**
+ * Page IDs chosen to appear under About in the header.
+ *
+ * @param int $about_id About page ID. Defaults to the About section page.
+ * @return int[]
+ */
+function stillframe_about_dropdown_page_ids( $about_id = 0 ) {
+	if ( ! $about_id ) {
+		$about    = stillframe_get_section_page( 'about' );
+		$about_id = $about instanceof WP_Post ? (int) $about->ID : 0;
+	}
+
+	$about_id = (int) $about_id;
+	if ( ! $about_id ) {
+		return array();
+	}
+
+	$raw = get_post_meta( $about_id, 'stillframe_about_dropdown_ids', true );
+	if ( ! is_array( $raw ) ) {
+		return array();
+	}
+
+	$ids = array();
+	foreach ( $raw as $id ) {
+		$id = (int) $id;
+		if ( $id && $id !== $about_id ) {
+			$ids[] = $id;
+		}
+	}
+
+	return array_values( array_unique( $ids ) );
+}
+
+/**
+ * Page ID for an internal URL, or 0.
+ *
+ * @param string $url Link href.
+ * @return int
+ */
+function stillframe_url_to_page_id( $url ) {
+	$url = trim( html_entity_decode( (string) $url, ENT_QUOTES ) );
+	if ( '' === $url || ! preg_match( '/^[^#]/', $url ) || preg_match( '#^(mailto:|tel:|javascript:)#i', $url ) ) {
+		return 0;
+	}
+
+	$home_host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+	$parts     = wp_parse_url( $url );
+	$host      = isset( $parts['host'] ) ? (string) $parts['host'] : '';
+	if ( $host && $home_host && 0 !== strcasecmp( $host, $home_host ) ) {
+		return 0;
+	}
+
+	$path = isset( $parts['path'] ) ? (string) $parts['path'] : '';
+	$abs  = $host ? preg_replace( '/#.*$/', '', $url ) : home_url( $path ? $path : '/' . ltrim( $url, '/' ) );
+	$abs  = preg_replace( '/#.*$/', '', $abs );
+
+	$post_id = url_to_postid( $abs );
+	if ( $post_id ) {
+		$post = get_post( $post_id );
+		return ( $post instanceof WP_Post && 'page' === $post->post_type ) ? (int) $post_id : 0;
+	}
+
+	$slug = $path ? basename( untrailingslashit( $path ) ) : '';
+	if ( '' === $slug ) {
+		return 0;
+	}
+
+	$page = get_page_by_path( $slug );
+	return $page instanceof WP_Post ? (int) $page->ID : 0;
+}
+
+/**
+ * Page IDs linked from About copy, in the order they appear.
+ *
+ * @param int $about_id About page ID.
+ * @return int[]
+ */
+function stillframe_about_content_page_ids( $about_id ) {
+	$about_id = (int) $about_id;
+	$post     = get_post( $about_id );
+	if ( ! $post instanceof WP_Post ) {
+		return array();
+	}
+
+	if ( ! preg_match_all( '/<a\s[^>]*href\s*=\s*([\'"])([^\'"]+)\1/i', (string) $post->post_content, $matches ) ) {
+		return array();
+	}
+
+	$home_id = (int) get_option( 'page_on_front' );
+	$ids     = array();
+	foreach ( $matches[2] as $href ) {
+		$page_id = stillframe_url_to_page_id( $href );
+		if ( ! $page_id || $page_id === $about_id || $page_id === $home_id ) {
+			continue;
+		}
+		$ids[] = $page_id;
+	}
+
+	return array_values( array_unique( $ids ) );
+}
+
+/**
+ * Put page IDs in the same order as links on About.
+ *
+ * @param int[] $ids      Page IDs.
+ * @param int   $about_id About page ID.
+ * @return int[]
+ */
+function stillframe_order_ids_like_about_links( $ids, $about_id ) {
+	$ids   = array_values( array_unique( array_map( 'intval', $ids ) ) );
+	$order = stillframe_about_content_page_ids( $about_id );
+	if ( ! $ids || ! $order ) {
+		return $ids;
+	}
+
+	$rank = array_flip( $order );
+	$head = array();
+	$tail = array();
+
+	foreach ( $order as $id ) {
+		if ( in_array( $id, $ids, true ) ) {
+			$head[] = $id;
+		}
+	}
+
+	foreach ( $ids as $id ) {
+		if ( ! isset( $rank[ $id ] ) ) {
+			$tail[] = $id;
+		}
+	}
+
+	return array_values( array_unique( array_merge( $head, $tail ) ) );
+}
+
+/**
+ * Links in the About header dropdown.
+ *
+ * Uses pages picked on the About screen, then child pages, then on-page headings.
+ * Chosen pages follow the order of links in the About copy.
+ *
+ * @return array<int, array{url:string, label:string, current:bool}>
+ */
+function stillframe_about_dropdown_items() {
+	$about = stillframe_get_section_page( 'about' );
+	if ( ! $about instanceof WP_Post ) {
+		return array();
+	}
+
+	$about_id = (int) $about->ID;
+	$items    = array();
+	$ids      = stillframe_about_dropdown_page_ids( $about_id );
+	$linked   = stillframe_about_content_page_ids( $about_id );
+
+	if ( $ids && $linked ) {
+		$ids = stillframe_order_ids_like_about_links( $ids, $about_id );
+	} elseif ( ! $ids && $linked ) {
+		$ids = $linked;
+	}
+
+	if ( $ids ) {
+		foreach ( $ids as $page_id ) {
+			$page = get_post( $page_id );
+			if ( ! $page instanceof WP_Post || 'publish' !== $page->post_status ) {
+				continue;
+			}
+
+			$url = get_permalink( $page );
+			if ( ! $url ) {
+				continue;
+			}
+
+			$items[] = array(
+				'url'     => $url,
+				'label'   => get_the_title( $page ),
+				'current' => is_page( $page_id ),
+			);
+		}
+
+		return $items;
+	}
+
+	$children = get_pages(
+		array(
+			'parent'      => $about_id,
+			'sort_column' => 'menu_order,post_title',
+		)
+	);
+
+	if ( $children ) {
+		foreach ( $children as $page ) {
+			$url = get_permalink( $page );
+			if ( ! $url ) {
+				continue;
+			}
+
+			$items[] = array(
+				'url'     => $url,
+				'label'   => get_the_title( $page ),
+				'current' => is_page( (int) $page->ID ),
+			);
+		}
+
+		if ( $items ) {
+			return $items;
+		}
+	}
+
+	$about_url = (string) get_permalink( $about );
+	foreach ( stillframe_about_toc_items( $about_id ) as $heading ) {
+		$items[] = array(
+			'url'     => $about_url . '#' . $heading['id'],
+			'label'   => $heading['title'],
+			'current' => false,
+		);
+	}
+
+	return $items;
+}
+
+/**
+ * Links in the Projects header dropdown.
+ *
+ * @return array<int, array{url:string, label:string, current:bool}>
+ */
+function stillframe_projects_dropdown_items() {
+	$query = new WP_Query(
+		array(
+			'post_type'              => 'project',
+			'post_status'            => 'publish',
+			'posts_per_page'         => 24,
+			'orderby'                => 'title',
+			'order'                  => 'ASC',
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		)
+	);
+
+	$items     = array();
+	$current_id = is_singular( 'project' ) ? (int) get_queried_object_id() : 0;
+
+	foreach ( $query->posts as $project ) {
+		$url = get_permalink( $project );
+		if ( ! $url ) {
+			continue;
+		}
+
+		$items[] = array(
+			'url'     => $url,
+			'label'   => get_the_title( $project ),
+			'current' => $current_id === (int) $project->ID,
+		);
+	}
+
+	return $items;
+}
+
+/**
+ * Dropdown links for a primary nav item, if any.
+ *
+ * @param string $key Nav item key.
+ * @return array<int, array{url:string, label:string, current:bool}>
+ */
+function stillframe_nav_dropdown_items( $key ) {
+	if ( 'about' === $key ) {
+		return stillframe_about_dropdown_items();
+	}
+
+	if ( 'projects' === $key ) {
+		return stillframe_projects_dropdown_items();
+	}
+
+	return array();
+}
+
+/**
  * Fallback menu when no menu is assigned in Appearance → Menus.
  */
 function stillframe_fallback_menu() {
@@ -499,7 +870,55 @@ function stillframe_fallback_menu() {
 			continue;
 		}
 
-		$current = stillframe_nav_item_is_current( $item['key'] );
+		$current  = stillframe_nav_item_is_current( $item['key'] );
+		$children = stillframe_nav_dropdown_items( $item['key'] );
+
+		if ( $children ) {
+			$child_current = false;
+			foreach ( $children as $child ) {
+				if ( ! empty( $child['current'] ) ) {
+					$child_current = true;
+					break;
+				}
+			}
+
+			$li_class = 'nav-item nav-item--drop';
+			if ( $current || $child_current ) {
+				$li_class .= ' is-current';
+			}
+
+			$toggle_label = sprintf(
+				/* translators: %s: nav item label, e.g. About or Projects. */
+				__( '%s menu', 'stillframe' ),
+				$item['label']
+			);
+
+			echo '<li class="' . esc_attr( $li_class ) . '">';
+			echo '<div class="nav-item__hit">';
+			printf(
+				'<a class="nav-link" href="%1$s"%2$s>%3$s</a>',
+				esc_url( $item['url'] ),
+				$current && ! $child_current ? ' aria-current="page"' : '',
+				esc_html( $item['label'] )
+			);
+			echo '<button type="button" class="nav-drop__toggle" aria-expanded="false" aria-label="' . esc_attr( $toggle_label ) . '"><span aria-hidden="true"></span></button>';
+			echo '</div>';
+			echo '<ul class="nav-sub">';
+
+			foreach ( $children as $child ) {
+				printf(
+					'<li class="%1$s"><a href="%2$s"%3$s>%4$s</a></li>',
+					! empty( $child['current'] ) ? 'is-current' : '',
+					esc_url( $child['url'] ),
+					! empty( $child['current'] ) ? ' aria-current="page"' : '',
+					esc_html( $child['label'] )
+				);
+			}
+
+			echo '</ul>';
+			echo '</li>';
+			continue;
+		}
 
 		printf(
 			'<li class="%1$s"><a class="nav-link" href="%2$s"%3$s>%4$s</a></li>',
@@ -749,12 +1168,47 @@ function stillframe_is_about_page( $page_id = 0 ) {
 		return false;
 	}
 
+	if ( stillframe_is_resume_page( $page_id ) ) {
+		return false;
+	}
+
 	$slug = (string) get_post_field( 'post_name', $page_id );
 	if ( 'about' === $slug || 0 === strpos( $slug, 'about' ) ) {
 		return true;
 	}
 
 	return 'template-about.php' === get_page_template_slug( $page_id );
+}
+
+/**
+ * Whether this page is the Resume screen.
+ *
+ * @param int $page_id Optional page ID. Defaults to the current post.
+ * @return bool
+ */
+function stillframe_is_resume_page( $page_id = 0 ) {
+	$page_id = $page_id ? (int) $page_id : (int) get_the_ID();
+	if ( ! $page_id ) {
+		return false;
+	}
+
+	$slug  = strtolower( (string) get_post_field( 'post_name', $page_id ) );
+	$title = strtolower( trim( (string) get_post_field( 'post_title', $page_id ) ) );
+
+	if ( in_array( $slug, array( 'resume', 'cv' ), true ) || 0 === strpos( $slug, 'resume-' ) || 0 === strpos( $slug, 'cv-' ) ) {
+		return true;
+	}
+
+	if ( in_array( $title, array( 'resume', 'cv' ), true ) ) {
+		return true;
+	}
+
+	$resume = stillframe_get_section_page( 'resume' );
+	if ( $resume instanceof WP_Post && $page_id === (int) $resume->ID ) {
+		return true;
+	}
+
+	return false;
 }
 
 /**
@@ -862,22 +1316,26 @@ function stillframe_contact_setting( $key, $default = '' ) {
  */
 function stillframe_resume_attachment_id( $page_id = 0 ) {
 	$page_id = $page_id ? (int) $page_id : (int) get_the_ID();
-	$ids     = array();
-
-	if ( $page_id ) {
-		$ids[] = (int) get_post_meta( $page_id, 'stillframe_resume_id', true );
+	if ( ! $page_id || ! stillframe_is_resume_page( $page_id ) ) {
+		return 0;
 	}
 
-	if ( stillframe_is_about_page( $page_id ) ) {
-		$about = get_page_by_path( 'about' );
-		if ( $about instanceof WP_Post ) {
-			$ids[] = (int) get_post_meta( $about->ID, 'stillframe_resume_id', true );
-		}
+	$ids = array(
+		(int) get_post_meta( $page_id, 'stillframe_resume_id', true ),
+	);
 
-		$ids[] = (int) get_theme_mod( 'stillframe_resume_id', 0 );
+	$resume_page = stillframe_get_section_page( 'resume' );
+	if ( $resume_page instanceof WP_Post ) {
+		$ids[] = (int) get_post_meta( $resume_page->ID, 'stillframe_resume_id', true );
 	}
 
-	$ids = array_unique( array_filter( $ids ) );
+	$about = stillframe_get_section_page( 'about' );
+	if ( $about instanceof WP_Post ) {
+		$ids[] = (int) get_post_meta( $about->ID, 'stillframe_resume_id', true );
+	}
+
+	$ids[] = (int) get_theme_mod( 'stillframe_resume_id', 0 );
+	$ids   = array_unique( array_filter( $ids ) );
 
 	foreach ( $ids as $attachment_id ) {
 		if ( stillframe_is_resume_file( $attachment_id ) && wp_get_attachment_url( $attachment_id ) ) {
@@ -1082,7 +1540,7 @@ function stillframe_body_class( $classes ) {
 
 	if ( is_front_page() ) {
 		$classes[] = 'vibe-home';
-	} elseif ( is_page( 'about' ) || is_page_template( 'template-about.php' ) || ( is_singular( 'page' ) && stillframe_is_about_page( get_queried_object_id() ) ) ) {
+	} elseif ( is_page( 'about' ) || is_page_template( 'template-about.php' ) || ( is_singular( 'page' ) && ( stillframe_is_about_page( get_queried_object_id() ) || stillframe_is_resume_page( get_queried_object_id() ) ) ) ) {
 		$classes[] = 'vibe-about';
 	} elseif ( is_page( 'contact' ) || is_page_template( 'template-contact.php' ) || ( is_singular( 'page' ) && stillframe_is_contact_page( get_queried_object_id() ) ) ) {
 		$classes[] = 'vibe-contact';
@@ -1181,32 +1639,49 @@ function stillframe_about_toc_items( $post_id = 0 ) {
 		}
 	}
 
-	if ( stillframe_resume_attachment_id( $post_id ) ) {
-		$items[] = array(
-			'id'    => 'resume',
-			'title' => __( 'Resume', 'stillframe' ),
-			'level' => 2,
-		);
-	}
-
 	return $items;
 }
 
 /**
- * Give About headings ids so the resume can jump to them.
+ * Jump links for the project table of contents. H3s only.
+ *
+ * @param int $post_id Project ID.
+ * @return array<int, array{id:string, title:string, level:int}>
+ */
+function stillframe_project_toc_items( $post_id = 0 ) {
+	$post_id = $post_id ? (int) $post_id : (int) get_the_ID();
+	$post    = get_post( $post_id );
+	if ( ! $post instanceof WP_Post ) {
+		return array();
+	}
+
+	return stillframe_content_headings( (string) $post->post_content, 3, 3 );
+}
+
+/**
+ * Give About / project headings ids so the contents list can jump to them.
  *
  * @param string $content Page content.
  * @return string
  */
 function stillframe_about_heading_ids( $content ) {
-	if ( is_admin() || ! is_singular( 'page' ) || ! stillframe_is_about_page() ) {
+	if ( is_admin() ) {
+		return $content;
+	}
+
+	$levels = '';
+	if ( is_singular( 'page' ) && stillframe_is_about_page() ) {
+		$levels = '2-4';
+	} elseif ( is_singular( 'project' ) ) {
+		$levels = '3';
+	} else {
 		return $content;
 	}
 
 	$used = array();
 
 	return preg_replace_callback(
-		'/<h([2-4])(\s[^>]*)?>(.*?)<\/h\1>/is',
+		'/<h([' . $levels . '])(\s[^>]*)?>(.*?)<\/h\1>/is',
 		function ( $match ) use ( &$used ) {
 			$attrs = isset( $match[2] ) ? $match[2] : '';
 			if ( preg_match( '/\sid\s*=/', $attrs ) ) {

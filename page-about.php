@@ -22,7 +22,7 @@ get_header();
 					<h1 class="archive-header__title reveal" data-reveal><?php the_title(); ?></h1>
 				</header>
 				<?php if ( $toc ) : ?>
-					<nav class="about-toc reveal" data-about-toc data-reveal aria-label="<?php esc_attr_e( 'On this page', 'stillframe' ); ?>">
+					<nav class="about-toc" data-about-toc aria-label="<?php esc_attr_e( 'On this page', 'stillframe' ); ?>">
 						<p class="about-toc__label"><?php esc_html_e( 'On this page', 'stillframe' ); ?></p>
 						<ol>
 							<?php foreach ( $toc as $item ) : ?>
@@ -36,7 +36,7 @@ get_header();
 				<div class="about__body">
 					<div class="about__grid">
 						<div class="about__copy">
-							<div class="prose reveal" data-reveal>
+							<div class="prose is-awaiting-reveal">
 								<?php the_content(); ?>
 							</div>
 						</div>
@@ -56,8 +56,6 @@ get_header();
 							</figure>
 						<?php endif; ?>
 					</div>
-
-					<?php get_template_part( 'template-parts/resume' ); ?>
 				</div>
 			</article>
 		</div>

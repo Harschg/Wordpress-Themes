@@ -38,6 +38,7 @@ $term = get_queried_object();
 						'photo',
 						array(
 							'index' => $i,
+							'arch'  => true,
 						)
 					);
 					++$i;

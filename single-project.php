@@ -18,6 +18,7 @@ $stack  = stillframe_project_stack( get_the_ID() );
 	<?php
 	while ( have_posts() ) :
 		the_post();
+		$toc = stillframe_project_toc_items( get_the_ID() );
 		?>
 		<div class="page-glass">
 			<article <?php post_class( 'project-single' ); ?>>
@@ -50,10 +51,48 @@ $stack  = stillframe_project_stack( get_the_ID() );
 					</div>
 				</header>
 
-				<div class="prose reveal" data-reveal>
-					<?php the_content(); ?>
-				</div>
+				<?php if ( $toc ) : ?>
+					<nav class="about-toc" data-about-toc aria-label="<?php esc_attr_e( 'On this page', 'stillframe' ); ?>">
+						<p class="about-toc__label"><?php esc_html_e( 'On this page', 'stillframe' ); ?></p>
+						<ol>
+							<?php foreach ( $toc as $item ) : ?>
+								<li class="about-toc__item about-toc__item--h<?php echo esc_attr( (string) $item['level'] ); ?>">
+									<a href="#<?php echo esc_attr( $item['id'] ); ?>"><?php echo esc_html( $item['title'] ); ?></a>
+								</li>
+							<?php endforeach; ?>
+						</ol>
+					</nav>
+				<?php endif; ?>
+
+				<?php if ( get_post() && '' !== trim( (string) get_post()->post_content ) ) : ?>
+					<div class="prose project-single__intro is-awaiting-reveal">
+						<?php the_content(); ?>
+					</div>
+				<?php endif; ?>
+
+				<?php
+				get_template_part(
+					'template-parts/project',
+					'features',
+					array(
+						'post_id' => get_the_ID(),
+					)
+				);
+				?>
 			</article>
+		</div>
+
+		<div class="project-stage" data-project-stage hidden>
+			<button type="button" class="project-stage__close" data-stage-close>
+				<?php esc_html_e( 'Close', 'stillframe' ); ?>
+			</button>
+			<button type="button" class="project-stage__nav project-stage__nav--prev" data-stage-prev aria-label="<?php esc_attr_e( 'Previous photo', 'stillframe' ); ?>">
+				<span aria-hidden="true">←</span>
+			</button>
+			<img class="project-stage__image" data-stage-image alt="" />
+			<button type="button" class="project-stage__nav project-stage__nav--next" data-stage-next aria-label="<?php esc_attr_e( 'Next photo', 'stillframe' ); ?>">
+				<span aria-hidden="true">→</span>
+			</button>
 		</div>
 	<?php endwhile; ?>
 </main>

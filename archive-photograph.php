@@ -54,6 +54,7 @@ $series = stillframe_photo_series_terms();
 								'photo',
 								array(
 									'index' => $i,
+									'arch'  => true,
 								)
 							);
 							++$i;

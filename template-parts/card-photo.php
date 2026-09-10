@@ -12,11 +12,16 @@
 defined( 'ABSPATH' ) || exit;
 
 $index    = isset( $args['index'] ) ? (int) $args['index'] : 0;
+$arch     = ! empty( $args['arch'] );
 $location = get_post_meta( get_the_ID(), 'stillframe_location', true );
 $tall     = 0 === $index % 3;
+$classes  = 'photo-card';
+if ( $arch ) {
+	$classes .= ' photo-card--arch reveal';
+}
 ?>
 
-<article <?php post_class( 'photo-card' ); ?>>
+<article <?php post_class( $classes ); ?><?php echo $arch ? ' data-reveal' : ''; ?>>
 	<a class="photo-card__link" href="<?php the_permalink(); ?>">
 		<?php
 		$thumb = stillframe_get_card_image( get_the_ID(), 'stillframe-gallery', 'photo-card__image' );

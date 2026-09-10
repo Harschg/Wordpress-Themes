@@ -272,6 +272,7 @@ function stillframe_ensure_section_pages() {
 	$pages   = array(
 		'gallery'  => __( 'Gallery', 'stillframe' ),
 		'projects' => __( 'Projects', 'stillframe' ),
+		'resume'   => __( 'Resume', 'stillframe' ),
 	);
 
 	foreach ( $pages as $slug => $title ) {
@@ -401,6 +402,34 @@ function stillframe_maybe_migrate_page_settings() {
 add_action( 'admin_init', 'stillframe_maybe_migrate_page_settings' );
 
 /**
+ * Move the uploaded resume off About and onto the Resume page, once.
+ */
+function stillframe_maybe_move_resume_to_resume_page() {
+	if ( '1.0.85' === get_option( 'stillframe_resume_on_resume_page' ) ) {
+		return;
+	}
+
+	if ( current_user_can( 'publish_pages' ) ) {
+		stillframe_ensure_section_pages();
+	}
+
+	$resume_page = stillframe_get_section_page( 'resume' );
+	$about       = stillframe_get_section_page( 'about' );
+	$from_about  = ( $about instanceof WP_Post ) ? (int) get_post_meta( $about->ID, 'stillframe_resume_id', true ) : 0;
+	$from_mod    = (int) get_theme_mod( 'stillframe_resume_id', 0 );
+	$source      = $from_about ? $from_about : $from_mod;
+
+	if ( $resume_page instanceof WP_Post && $source && ! get_post_meta( $resume_page->ID, 'stillframe_resume_id', true ) ) {
+		update_post_meta( $resume_page->ID, 'stillframe_resume_id', $source );
+	}
+
+	if ( $resume_page instanceof WP_Post || ! $source ) {
+		update_option( 'stillframe_resume_on_resume_page', '1.0.85' );
+	}
+}
+add_action( 'init', 'stillframe_maybe_move_resume_to_resume_page' );
+
+/**
  * Always use the About / Contact templates when those pages are detected.
  */
 function stillframe_template_include( $template ) {
@@ -409,6 +438,11 @@ function stillframe_template_include( $template ) {
 	}
 
 	$page_id = (int) get_queried_object_id();
+
+	if ( stillframe_is_resume_page( $page_id ) ) {
+		$found = locate_template( 'page-resume.php' );
+		return $found ? $found : $template;
+	}
 
 	if ( stillframe_is_about_page( $page_id ) ) {
 		$found = locate_template( 'page-about.php' );

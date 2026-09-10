@@ -9,6 +9,7 @@ defined( 'ABSPATH' ) || exit;
 ?><!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
+	<script>document.documentElement.classList.add("has-fade-in");</script>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<?php wp_head(); ?>
@@ -23,7 +24,7 @@ defined( 'ABSPATH' ) || exit;
 <noscript>
 	<style>
 		.page-loader { display: none !important; }
-		.site-header, .site-main, .site-footer { opacity: 1 !important; }
+		.site-header, .site-main, .site-footer, img { opacity: 1 !important; }
 	</style>
 </noscript>
 
@@ -32,9 +33,15 @@ defined( 'ABSPATH' ) || exit;
 <header class="site-header">
 	<div class="site-header__inner">
 		<div class="site-brand">
-			<?php if ( has_custom_logo() ) : ?>
-				<?php the_custom_logo(); ?>
-			<?php endif; ?>
+			<a class="site-brand__link" href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home">
+				<?php
+				$logo = stillframe_site_logo_img();
+				if ( $logo ) {
+					echo $logo; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stillframe_attachment_img()
+				}
+				?>
+				<span class="site-brand__name"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
+			</a>
 		</div>
 
 		<nav id="site-nav" class="site-nav" data-nav>
