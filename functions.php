@@ -7,7 +7,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'STILLFRAME_VERSION', '1.0.93' );
+define( 'STILLFRAME_VERSION', '1.2.1' );
 
 require get_template_directory() . '/inc/setup.php';
 require get_template_directory() . '/inc/post-types.php';

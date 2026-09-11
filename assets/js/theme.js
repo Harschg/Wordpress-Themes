@@ -133,6 +133,12 @@
 				markReveal(el);
 			}
 		});
+
+		if (root.hasAttribute("data-reveal") && root.querySelector(":scope > [data-reveal]")) {
+			root.classList.remove("reveal");
+			root.removeAttribute("data-reveal");
+		}
+
 		root.classList.remove("is-awaiting-reveal");
 	}
 
@@ -159,9 +165,13 @@
 				});
 		}
 
-		var aboutCopy = document.querySelector(".about__copy .prose");
-		if (aboutCopy) {
-			prepareContentReveals(aboutCopy);
+		if (!document.body.classList.contains("vibe-gallery")) {
+			document.querySelectorAll(".prose").forEach(function (root) {
+				if (root.closest(".project-single__intro, .project-feature__text, .about-timeline__card, .about-timeline__card-body")) {
+					return;
+				}
+				prepareContentReveals(root);
+			});
 		}
 
 		prepareGalleryArches();
@@ -321,6 +331,32 @@
 		return null;
 	}
 
+	function revealKind(el) {
+		if (!el) {
+			return "text";
+		}
+		if (el.classList.contains("photo-card--arch")) {
+			return "arch";
+		}
+		if (el.classList.contains("about-timeline__event")) {
+			return "solo";
+		}
+		if (
+			el.classList.contains("reveal--from-left") ||
+			el.classList.contains("reveal--from-right") ||
+			el.classList.contains("project-feature__media") ||
+			el.classList.contains("about__portrait") ||
+			el.classList.contains("home-intro__portrait") ||
+			el.classList.contains("project-card") ||
+			el.matches("figure, .wp-block-image, .wp-block-media-text") ||
+			el.nodeName === "IMG" ||
+			(el.nodeName === "P" && el.querySelector(":scope > img"))
+		) {
+			return "media";
+		}
+		return "text";
+	}
+
 	function pendingRevealGroup() {
 		var items = revealItems();
 		var start = -1;
@@ -338,11 +374,29 @@
 		}
 
 		var first = items[start];
-		if (!first.classList.contains("photo-card--arch")) {
+		if (first.classList.contains("photo-card--arch")) {
+			var rowTop = first.offsetTop;
+			var archGroup = [first];
+
+			for (i = start + 1; i < items.length; i++) {
+				var archEl = items[i];
+				if (archEl.classList.contains("is-visible") || archEl.classList.contains("is-arching")) {
+					continue;
+				}
+				if (!archEl.classList.contains("photo-card--arch") || Math.abs(archEl.offsetTop - rowTop) > 32) {
+					break;
+				}
+				archGroup.push(archEl);
+			}
+
+			return archGroup;
+		}
+
+		if (revealKind(first) === "solo" || document.body.classList.contains("vibe-gallery")) {
 			return [first];
 		}
 
-		var rowTop = first.offsetTop;
+		var kind = revealKind(first);
 		var group = [first];
 
 		for (i = start + 1; i < items.length; i++) {
@@ -350,7 +404,7 @@
 			if (el.classList.contains("is-visible") || el.classList.contains("is-arching")) {
 				continue;
 			}
-			if (!el.classList.contains("photo-card--arch") || Math.abs(el.offsetTop - rowTop) > 32) {
+			if (revealKind(el) !== kind || revealKind(el) === "solo") {
 				break;
 			}
 			group.push(el);
@@ -428,6 +482,9 @@
 	function revealGap(el) {
 		if (el.classList.contains("photo-card--arch")) {
 			return (parseFloat(el.dataset.archTime) || 980) + (parseFloat(el.dataset.archDelay) || 0);
+		}
+		if (el.classList.contains("about-timeline__event")) {
+			return 280;
 		}
 		if (el.classList.contains("reveal--from-left") || el.classList.contains("reveal--from-right")) {
 			return 920;
@@ -568,7 +625,7 @@
 		var max = 6.5;
 
 		function surface(root) {
-			return root.querySelector(".photo-card__media") || root;
+			return root.querySelector(".photo-card__media, .about-timeline__card-clip") || root;
 		}
 
 		function reset(el) {
@@ -592,7 +649,7 @@
 			el.style.setProperty("--press-y", ((px - 0.5) * 2 * max).toFixed(2) + "deg");
 		}
 
-		document.querySelectorAll(".series-card, .photo-card__link, .project-card").forEach(function (root) {
+		document.querySelectorAll(".series-card, .photo-card__link, .project-card, .about-timeline__card").forEach(function (root) {
 			var el = surface(root);
 
 			root.addEventListener("pointerenter", function () {
@@ -772,6 +829,120 @@
 		}
 
 		window.requestAnimationFrame(followWorld);
+	}
+
+	var timeline = document.querySelector("[data-about-timeline]");
+	if (timeline) {
+		var timelineEvents = Array.prototype.slice.call(timeline.querySelectorAll(".about-timeline__event"));
+
+		function updateTimelineProgress() {
+			var rail = timeline.querySelector(".about-timeline__rail") || timeline;
+			var rootRect = rail.getBoundingClientRect();
+			if (rootRect.height <= 0) {
+				return;
+			}
+
+			var vh = window.innerHeight || 0;
+			var line = vh * 0.5;
+			var pageHeight = Math.max(
+				document.documentElement.scrollHeight,
+				document.body ? document.body.scrollHeight : 0
+			);
+			var atBottom = window.scrollY + vh >= pageHeight - 24;
+			var pct = atBottom ? 1 : (line - rootRect.top) / rootRect.height;
+
+			timeline.style.setProperty(
+				"--timeline-progress",
+				(Math.max(0, Math.min(1, pct)) * 100).toFixed(2) + "%"
+			);
+
+			if (atBottom) {
+				line = rootRect.bottom + 1;
+			}
+
+			var current = null;
+			timelineEvents.forEach(function (event) {
+				var dot = event.querySelector(".about-timeline__dot");
+				var top = (dot || event).getBoundingClientRect().top;
+				var lit = atBottom || top <= line;
+				event.classList.toggle("is-lit", lit);
+				if (lit) {
+					current = event;
+				}
+			});
+			timelineEvents.forEach(function (event) {
+				event.classList.toggle("is-current", event === current);
+			});
+		}
+
+		window.addEventListener("scroll", updateTimelineProgress, { passive: true });
+		window.addEventListener("resize", updateTimelineProgress);
+		if (typeof ResizeObserver !== "undefined") {
+			new ResizeObserver(updateTimelineProgress).observe(timeline);
+		}
+		updateTimelineProgress();
+
+		timeline.addEventListener("click", function (event) {
+			var topic = event.target.closest(".about-timeline__topic");
+			if (!topic || !timeline.contains(topic)) {
+				return;
+			}
+
+			var item = topic.closest(".about-timeline__event");
+			if (!item) {
+				return;
+			}
+
+			function setEventOpen(el, isOpen) {
+				var button = el.querySelector(".about-timeline__topic");
+				var panel = el.querySelector(".about-timeline__card");
+				el.classList.toggle("is-open", isOpen);
+				if (button) {
+					button.setAttribute("aria-expanded", isOpen ? "true" : "false");
+				}
+				if (panel) {
+					if (isOpen) {
+						panel.removeAttribute("inert");
+					} else {
+						panel.setAttribute("inert", "");
+					}
+				}
+			}
+
+			var open = !item.classList.contains("is-open");
+			if (!open) {
+				setEventOpen(item, false);
+				return;
+			}
+
+			var anchor = item.querySelector(".about-timeline__heading") || topic;
+			var before = anchor.getBoundingClientRect().top;
+
+			timeline.querySelectorAll(".about-timeline__event.is-open").forEach(function (el) {
+				if (el === item) {
+					return;
+				}
+				var panel = el.querySelector(".about-timeline__card");
+				if (panel) {
+					panel.classList.add("is-instant");
+				}
+				setEventOpen(el, false);
+				if (panel) {
+					panel.offsetHeight;
+					panel.classList.remove("is-instant");
+				}
+			});
+
+			var shift = anchor.getBoundingClientRect().top - before;
+			if (shift) {
+				window.scrollBy(0, shift);
+			}
+
+			setEventOpen(item, true);
+			window.requestAnimationFrame(function () {
+				anchor.scrollIntoView({ block: "start", behavior: "auto" });
+			});
+		});
 	}
 
 	var toc = document.querySelector("[data-about-toc]");
@@ -957,7 +1128,7 @@
 			return;
 		}
 
-		var selector = ".prose a[href], .project-feature__text a[href]";
+		var selector = ".prose a[href], .project-feature__text a[href], .about-timeline__topic";
 
 		function setTilt(link) {
 			var tilt = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 4);
@@ -965,7 +1136,7 @@
 		}
 
 		function isTextLink(link) {
-			if (!link || link.querySelector("img") || link.closest(".btn, .site-nav, .nav-sub, .about-toc")) {
+			if (!link || link.querySelector("img") || link.closest(".btn, .site-nav, .nav-sub, .about-toc, .about-timeline__card")) {
 				return false;
 			}
 			return link.matches(selector);
@@ -974,7 +1145,7 @@
 		document.addEventListener(
 			"pointerenter",
 			function (event) {
-				var link = event.target.closest ? event.target.closest("a") : null;
+				var link = event.target.closest ? event.target.closest("a, .about-timeline__topic") : null;
 				if (!isTextLink(link)) {
 					return;
 				}

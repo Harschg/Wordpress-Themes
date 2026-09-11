@@ -1622,6 +1622,259 @@ function stillframe_content_headings( $content, $min_level = 2, $max_level = 3 )
 }
 
 /**
+ * Strip comments and links from a content fragment so it can sit inside a card link.
+ *
+ * @param string $html HTML.
+ * @return string
+ */
+function stillframe_about_timeline_plain_html( $html ) {
+	$html = preg_replace( '/<!--.*?-->/s', '', (string) $html );
+	$html = preg_replace( '/<\/?a\b[^>]*>/i', '', (string) $html );
+
+	return trim( (string) $html );
+}
+
+/**
+ * Short copy from a page when a timeline section has no body of its own.
+ *
+ * @param int $page_id Page ID.
+ * @return string
+ */
+function stillframe_about_timeline_page_excerpt( $page_id ) {
+	$page_id = (int) $page_id;
+	if ( ! $page_id ) {
+		return '';
+	}
+
+	$excerpt = get_the_excerpt( $page_id );
+	if ( is_string( $excerpt ) && '' !== trim( $excerpt ) ) {
+		return wpautop( esc_html( trim( $excerpt ) ) );
+	}
+
+	$raw = wp_strip_all_tags( (string) get_post_field( 'post_content', $page_id ) );
+	$raw = wp_trim_words( $raw, 48 );
+
+	return $raw ? wpautop( esc_html( $raw ) ) : '';
+}
+
+/**
+ * Page a timeline heading should open, from its section links or title.
+ *
+ * @param string $html     Section HTML.
+ * @param string $title    Heading text.
+ * @param int    $about_id About page ID.
+ * @return int
+ */
+function stillframe_about_timeline_event_page_id( $html, $title, $about_id ) {
+	$about_id = (int) $about_id;
+	$home_id  = (int) get_option( 'page_on_front' );
+
+	if ( preg_match_all( '/<a\s[^>]*href\s*=\s*([\'"])([^\'"]+)\1/i', (string) $html, $matches ) ) {
+		foreach ( $matches[2] as $href ) {
+			$page_id = stillframe_url_to_page_id( $href );
+			if ( $page_id && $page_id !== $about_id && $page_id !== $home_id ) {
+				return $page_id;
+			}
+		}
+	}
+
+	$title = trim( (string) $title );
+	$slug  = sanitize_title( $title );
+	if ( '' === $title ) {
+		return 0;
+	}
+
+	if ( in_array( $slug, array( 'resume', 'cv' ), true ) ) {
+		$resume = stillframe_get_section_page( 'resume' );
+		if ( $resume instanceof WP_Post ) {
+			return (int) $resume->ID;
+		}
+	}
+
+	foreach ( stillframe_about_dropdown_page_ids( $about_id ) as $page_id ) {
+		$page_title = get_the_title( $page_id );
+		if ( strcasecmp( $page_title, $title ) === 0 || sanitize_title( $page_title ) === $slug ) {
+			return (int) $page_id;
+		}
+	}
+
+	$by_path = get_page_by_path( $slug );
+	if ( $by_path instanceof WP_Post && (int) $by_path->ID !== $about_id && 'publish' === $by_path->post_status ) {
+		return (int) $by_path->ID;
+	}
+
+	$query = new WP_Query(
+		array(
+			'post_type'              => 'page',
+			'post_status'            => 'publish',
+			'title'                  => $title,
+			'posts_per_page'         => 1,
+			'post__not_in'           => array( $about_id ),
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		)
+	);
+
+	if ( ! empty( $query->posts[0] ) && $query->posts[0] instanceof WP_Post ) {
+		return (int) $query->posts[0]->ID;
+	}
+
+	return 0;
+}
+
+/**
+ * Centered About timeline: intro copy plus linked heading events.
+ *
+ * @param int $post_id About page ID.
+ * @return array{intro:string, events:array<int, array{id:string, title:string, html:string, url:string, side:string}>}
+ */
+function stillframe_about_timeline_data( $post_id = 0 ) {
+	$post_id = $post_id ? (int) $post_id : (int) get_the_ID();
+	$empty   = array(
+		'intro'  => '',
+		'events' => array(),
+	);
+
+	$post = get_post( $post_id );
+	if ( ! $post instanceof WP_Post ) {
+		return $empty;
+	}
+
+	$content = (string) $post->post_content;
+	if ( '' === trim( $content ) ) {
+		return $empty;
+	}
+
+	$parts = preg_split( '/(<h[2-4]\b[^>]*>.*?<\/h[2-4]>)/is', $content, -1, PREG_SPLIT_DELIM_CAPTURE );
+	if ( ! is_array( $parts ) ) {
+		return $empty;
+	}
+
+	$intro   = '';
+	$pending = array();
+	$current = null;
+	$used    = array();
+
+	foreach ( $parts as $part ) {
+		if ( preg_match( '/<h([2-4])(\s[^>]*)?>(.*?)<\/h\1>/is', $part, $match ) ) {
+			if ( is_array( $current ) ) {
+				$pending[] = $current;
+			}
+
+			$title = trim( wp_strip_all_tags( $match[3] ) );
+			$attrs = isset( $match[2] ) ? $match[2] : '';
+			$id    = '';
+			if ( preg_match( '/\sid\s*=\s*([\'"])([^\'"]+)\1/i', $attrs, $id_match ) ) {
+				$id = sanitize_title( $id_match[2] );
+			}
+			if ( '' === $id ) {
+				$id = sanitize_title( $title );
+			}
+
+			$base = $id;
+			$n    = 2;
+			while ( $id && isset( $used[ $id ] ) ) {
+				$id = $base . '-' . $n;
+				++$n;
+			}
+			if ( $id ) {
+				$used[ $id ] = true;
+			}
+
+			$current = array(
+				'id'    => $id,
+				'title' => $title,
+				'html'  => '',
+			);
+			continue;
+		}
+
+		if ( is_array( $current ) ) {
+			$current['html'] .= $part;
+		} else {
+			$intro .= $part;
+		}
+	}
+
+	if ( is_array( $current ) ) {
+		$pending[] = $current;
+	}
+
+	$events = array();
+	$index  = 0;
+	foreach ( $pending as $item ) {
+		if ( '' === $item['title'] ) {
+			continue;
+		}
+
+		$page_id = stillframe_about_timeline_event_page_id( $item['html'], $item['title'], $post_id );
+		if ( ! $page_id ) {
+			continue;
+		}
+
+		$url  = get_permalink( $page_id );
+		$html = stillframe_about_timeline_plain_html( $item['html'] );
+		if ( '' === trim( wp_strip_all_tags( $html ) ) ) {
+			$html = stillframe_about_timeline_page_excerpt( $page_id );
+		}
+		if ( ! $url ) {
+			continue;
+		}
+
+		$events[] = array(
+			'id'    => $item['id'],
+			'title' => $item['title'],
+			'html'  => $html,
+			'url'   => $url,
+			'side'  => 0 === $index % 2 ? 'left' : 'right',
+		);
+		++$index;
+	}
+
+	if ( ! $events ) {
+		$ids = stillframe_about_dropdown_page_ids( $post_id );
+		if ( $ids ) {
+			$ids = stillframe_order_ids_like_about_links( $ids, $post_id );
+		} else {
+			$ids = stillframe_about_content_page_ids( $post_id );
+		}
+
+		foreach ( $ids as $page_id ) {
+			$page = get_post( $page_id );
+			if ( ! $page instanceof WP_Post || 'publish' !== $page->post_status ) {
+				continue;
+			}
+
+			$url = get_permalink( $page );
+			if ( ! $url ) {
+				continue;
+			}
+
+			$events[] = array(
+				'id'    => sanitize_title( get_the_title( $page ) ),
+				'title' => get_the_title( $page ),
+				'html'  => stillframe_about_timeline_page_excerpt( (int) $page->ID ),
+				'url'   => $url,
+				'side'  => 0 === $index % 2 ? 'left' : 'right',
+			);
+			++$index;
+		}
+	}
+
+	$intro_html = stillframe_about_timeline_plain_html( $intro );
+	$intro_out  = '';
+	if ( '' !== trim( wp_strip_all_tags( $intro_html ) ) ) {
+		$intro_out = apply_filters( 'the_content', $intro );
+	}
+
+	return array(
+		'intro'  => $intro_out,
+		'events' => $events,
+	);
+}
+
+/**
  * Jump links for the About table of contents.
  *
  * @param int $post_id Page ID.
