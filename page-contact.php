@@ -23,7 +23,17 @@ $github    = stillframe_contact_setting( 'stillframe_github' );
 		?>
 		<div class="page-glass">
 		<article <?php post_class( 'contact' ); ?>>
-			<h1 class="archive-header__title reveal" data-reveal><?php the_title(); ?></h1>
+			<header class="page-masthead reveal" data-reveal>
+				<?php
+				get_template_part(
+					'template-parts/page-masthead',
+					'',
+					array(
+						'title' => get_the_title(),
+					)
+				);
+				?>
+			</header>
 			<div class="contact__grid">
 				<div class="contact__intro">
 					<?php if ( get_the_content() ) : ?>

@@ -22,33 +22,44 @@ $stack  = stillframe_project_stack( get_the_ID() );
 		?>
 		<div class="page-glass">
 			<article <?php post_class( 'project-single' ); ?>>
-				<header class="project-single__header">
-					<h1 class="archive-header__title reveal" data-reveal><?php the_title(); ?></h1>
+				<header class="project-single__header page-masthead reveal" data-reveal>
+					<?php
+					get_template_part(
+						'template-parts/page-masthead',
+						'',
+						array(
+							'kicker'     => __( 'Project', 'stillframe' ),
+							'kicker_url' => get_post_type_archive_link( 'project' ),
+						)
+					);
+					?>
 
 					<?php if ( has_excerpt() ) : ?>
-						<p class="project-single__lede reveal" data-reveal><?php echo esc_html( get_the_excerpt() ); ?></p>
+						<p class="page-masthead__lede"><?php echo esc_html( get_the_excerpt() ); ?></p>
 					<?php endif; ?>
 
 					<?php if ( $stack ) : ?>
-						<ul class="stack-list reveal" data-reveal>
+						<ul class="stack-list">
 							<?php foreach ( $stack as $item ) : ?>
 								<li><?php echo esc_html( $item ); ?></li>
 							<?php endforeach; ?>
 						</ul>
 					<?php endif; ?>
 
-					<div class="project-single__actions reveal" data-reveal>
-						<?php if ( $live ) : ?>
-							<a class="btn" href="<?php echo esc_url( $live ); ?>" target="_blank" rel="noopener noreferrer">
-								<?php esc_html_e( 'Live site', 'stillframe' ); ?>
-							</a>
-						<?php endif; ?>
-						<?php if ( $github ) : ?>
-							<a class="btn btn--ghost" href="<?php echo esc_url( $github ); ?>" target="_blank" rel="noopener noreferrer">
-								<?php esc_html_e( 'GitHub', 'stillframe' ); ?>
-							</a>
-						<?php endif; ?>
-					</div>
+					<?php if ( $live || $github ) : ?>
+						<div class="project-single__actions">
+							<?php if ( $live ) : ?>
+								<a class="btn" href="<?php echo esc_url( $live ); ?>" target="_blank" rel="noopener noreferrer">
+									<?php esc_html_e( 'Live site', 'stillframe' ); ?>
+								</a>
+							<?php endif; ?>
+							<?php if ( $github ) : ?>
+								<a class="btn btn--ghost" href="<?php echo esc_url( $github ); ?>" target="_blank" rel="noopener noreferrer">
+									<?php esc_html_e( 'GitHub', 'stillframe' ); ?>
+								</a>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>
 				</header>
 
 				<?php if ( $toc ) : ?>
@@ -66,7 +77,14 @@ $stack  = stillframe_project_stack( get_the_ID() );
 
 				<?php if ( get_post() && '' !== trim( (string) get_post()->post_content ) ) : ?>
 					<div class="prose project-single__intro is-awaiting-reveal">
-						<?php the_content(); ?>
+						<?php
+						echo stillframe_wrap_content_sections( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the_content
+							apply_filters( 'the_content', get_post()->post_content ),
+							3,
+							3,
+							get_the_ID()
+						);
+						?>
 					</div>
 				<?php endif; ?>
 

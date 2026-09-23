@@ -34,11 +34,11 @@ $url    = get_term_link( $term );
 		<?php
 		$frames = 0;
 		foreach ( $photos as $photo ) {
-			$frame = stillframe_get_card_image( $photo->ID, 'stillframe-card', 'series-card__image' );
+			$frame = stillframe_get_card_image( $photo->ID, 'series-card__image' );
 			if ( ! $frame ) {
 				continue;
 			}
-			echo $frame; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image()
+			echo $frame; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stillframe_get_card_image()
 			++$frames;
 		}
 		if ( ! $frames ) :

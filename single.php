@@ -17,9 +17,17 @@ get_header();
 		?>
 		<div class="page-glass">
 		<article <?php post_class( 'page-shell page-article' ); ?>>
-			<header class="page-header reveal" data-reveal>
-				<h1 class="page-header__title"><?php the_title(); ?></h1>
-				<p class="page-header__date"><?php echo esc_html( get_the_date() ); ?></p>
+			<header class="page-masthead reveal" data-reveal>
+				<?php
+				get_template_part(
+					'template-parts/page-masthead',
+					'',
+					array(
+						'title' => get_the_title(),
+						'lede'  => get_the_date(),
+					)
+				);
+				?>
 			</header>
 			<?php
 			$hero = stillframe_post_img( get_the_ID(), 'page-article__image' );

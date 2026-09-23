@@ -10,6 +10,32 @@ defined( 'ABSPATH' ) || exit;
 <html <?php language_attributes(); ?>>
 <head>
 	<script>document.documentElement.classList.add("has-fade-in");</script>
+	<style>
+		html.has-fade-in .page-loader {
+			position: fixed;
+			inset: 0;
+			z-index: 10000;
+			background: var(--bg, #141210);
+		}
+		html.has-fade-in .reveal:not(.is-visible),
+		html.has-fade-in .is-awaiting-reveal,
+		html.has-fade-in img:not(.is-in) {
+			opacity: 0;
+		}
+		html.has-fade-in .page-world img {
+			opacity: 1;
+		}
+		@media (prefers-reduced-motion: reduce) {
+			html.has-fade-in .page-loader {
+				display: none;
+			}
+			html.has-fade-in .reveal,
+			html.has-fade-in .is-awaiting-reveal,
+			html.has-fade-in img {
+				opacity: 1 !important;
+			}
+		}
+	</style>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<?php wp_head(); ?>

@@ -18,6 +18,7 @@ $portrait = $home_id ? stillframe_attachment_img(
 		'class'         => 'home-intro__image',
 		'alt'           => get_bloginfo( 'name' ),
 		'fetchpriority' => 'high',
+		'sizes'         => stillframe_feature_image_sizes(),
 	)
 ) : '';
 ?>
@@ -26,10 +27,18 @@ $portrait = $home_id ? stillframe_attachment_img(
 	<div class="page-glass">
 		<section class="home-intro" aria-label="<?php esc_attr_e( 'Welcome', 'stillframe' ); ?>">
 			<div class="home-intro__copy prose reveal" data-reveal>
-				<h1 class="archive-header__title"><?php esc_html_e( 'Welcome', 'stillframe' ); ?></h1>
-				<?php if ( $vibe ) : ?>
-					<p class="archive-header__lede"><?php echo esc_html( $vibe ); ?></p>
-				<?php endif; ?>
+				<header class="page-masthead">
+					<?php
+					get_template_part(
+						'template-parts/page-masthead',
+						'',
+						array(
+							'title' => __( 'Welcome', 'stillframe' ),
+							'lede'  => $vibe,
+						)
+					);
+					?>
+				</header>
 				<?php if ( $intro ) : ?>
 					<?php echo wp_kses_post( $intro ); ?>
 				<?php endif; ?>

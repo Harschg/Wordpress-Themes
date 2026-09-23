@@ -242,44 +242,229 @@ function stillframe_largest_attachment_url( $attachment_id ) {
 }
 
 /**
+ * Whether a registered size crops the original instead of scaling it.
+ *
+ * Cropped files would change CSS object-fit framing, so display code skips them.
+ *
+ * @param string $size Image size name.
+ * @return bool
+ */
+function stillframe_image_size_is_cropped( $size ) {
+	$size = (string) $size;
+
+	if ( 'full' === $size || 'medium' === $size || 'medium_large' === $size || 'large' === $size ) {
+		return false;
+	}
+
+	if ( 'thumbnail' === $size ) {
+		return true;
+	}
+
+	$sizes = wp_get_additional_image_sizes();
+	if ( isset( $sizes[ $size ]['crop'] ) ) {
+		return (bool) $sizes[ $size ]['crop'];
+	}
+
+	return false;
+}
+
+/**
+ * Uncropped sizes for gallery / project / series cards.
+ *
+ * @return string[]
+ */
+function stillframe_card_image_sizes() {
+	return array( 'stillframe-hero', 'large', 'stillframe-gallery', 'medium_large', 'full' );
+}
+
+/**
+ * Uncropped sizes for full-bleed page backgrounds.
+ *
+ * @return string[]
+ */
+function stillframe_world_image_sizes() {
+	return array( 'stillframe-world', 'stillframe-hero', 'full' );
+}
+
+/**
+ * Uncropped sizes for portraits and in-page feature photos.
+ *
+ * @return string[]
+ */
+function stillframe_feature_image_sizes() {
+	return array( 'stillframe-hero', 'full' );
+}
+
+/**
+ * URL for one image size, only if that file exists on disk.
+ *
+ * Missing generated sizes 404 and show a grey box, so this never trusts
+ * a size name that WordPress registered but did not write.
+ *
+ * @param int    $attachment_id Attachment ID.
+ * @param string $size          Size name, including full.
+ * @return string
+ */
+function stillframe_attachment_size_file_url( $attachment_id, $size ) {
+	$attachment_id = (int) $attachment_id;
+	$size          = (string) $size;
+
+	if ( ! $attachment_id || '' === $size ) {
+		return '';
+	}
+
+	if ( 'full' === $size ) {
+		return stillframe_largest_attachment_url( $attachment_id );
+	}
+
+	$meta = wp_get_attachment_metadata( $attachment_id );
+	if ( empty( $meta['sizes'][ $size ]['file'] ) ) {
+		return '';
+	}
+
+	$attached = get_attached_file( $attachment_id );
+	if ( ! $attached ) {
+		return '';
+	}
+
+	$path = path_join( dirname( $attached ), $meta['sizes'][ $size ]['file'] );
+	if ( ! is_readable( $path ) ) {
+		return '';
+	}
+
+	$url = wp_get_attachment_image_url( $attachment_id, $size );
+
+	return $url ? $url : '';
+}
+
+/**
+ * Width and height for a chosen size, falling back to the full file.
+ *
+ * @param int    $attachment_id Attachment ID.
+ * @param string $size          Size name.
+ * @return array{0:int,1:int}
+ */
+function stillframe_attachment_dimensions( $attachment_id, $size ) {
+	$meta = wp_get_attachment_metadata( (int) $attachment_id );
+	if ( ! is_array( $meta ) ) {
+		return array( 1600, 1067 );
+	}
+
+	if ( 'full' !== $size && ! empty( $meta['sizes'][ $size ]['width'] ) && ! empty( $meta['sizes'][ $size ]['height'] ) ) {
+		return array(
+			(int) $meta['sizes'][ $size ]['width'],
+			(int) $meta['sizes'][ $size ]['height'],
+		);
+	}
+
+	$width  = ! empty( $meta['width'] ) ? (int) $meta['width'] : 1600;
+	$height = ! empty( $meta['height'] ) ? (int) $meta['height'] : 1067;
+
+	return array( $width, $height );
+}
+
+/**
+ * First uncropped size whose file exists, then the full file.
+ *
+ * @param int      $attachment_id Attachment ID.
+ * @param string[] $sizes         Size names to try.
+ * @return array{url:string,size:string}
+ */
+function stillframe_pick_attachment( $attachment_id, $sizes ) {
+	$attachment_id = (int) $attachment_id;
+	if ( ! $attachment_id || ! wp_attachment_is_image( $attachment_id ) ) {
+		return array(
+			'url'  => '',
+			'size' => 'full',
+		);
+	}
+
+	foreach ( (array) $sizes as $size ) {
+		$size = (string) $size;
+		if ( '' === $size || stillframe_image_size_is_cropped( $size ) ) {
+			continue;
+		}
+
+		$url = stillframe_attachment_size_file_url( $attachment_id, $size );
+		if ( $url ) {
+			return array(
+				'url'  => $url,
+				'size' => $size,
+			);
+		}
+	}
+
+	return array(
+		'url'  => stillframe_largest_attachment_url( $attachment_id ),
+		'size' => 'full',
+	);
+}
+
+/**
+ * Public URL for an attachment at the first usable size in $sizes.
+ *
+ * @param int      $attachment_id Attachment ID.
+ * @param string[] $sizes         Size names to try.
+ * @return string
+ */
+function stillframe_attachment_url( $attachment_id, $sizes = array( 'full' ) ) {
+	$picked = stillframe_pick_attachment( $attachment_id, $sizes );
+
+	return $picked['url'];
+}
+
+/**
+ * Full-bleed background URL, preferring the theme world/hero sizes when present.
+ *
+ * @param int $attachment_id Attachment ID.
+ * @return string
+ */
+function stillframe_world_attachment_url( $attachment_id ) {
+	return stillframe_attachment_url( $attachment_id, stillframe_world_image_sizes() );
+}
+
+/**
  * Front-end img tag with a single src WordPress can serve. No srcset.
  *
  * @param int   $attachment_id Attachment ID.
  * @param array $args {
- *     @type string $class         Class attribute.
- *     @type string $alt           Alt text.
- *     @type string $loading       lazy|eager.
- *     @type string $decoding      async|auto|sync.
- *     @type string $fetchpriority high|low|auto.
+ *     @type string   $class         Class attribute.
+ *     @type string   $alt           Alt text.
+ *     @type string   $loading       lazy|eager.
+ *     @type string   $decoding      async|auto|sync.
+ *     @type string   $fetchpriority high|low|auto.
+ *     @type string   $size          Single size to try before full.
+ *     @type string[] $sizes         Size names to try, uncropped only.
  * }
  * @return string
  */
 function stillframe_attachment_img( $attachment_id, $args = array() ) {
-	$url = stillframe_largest_attachment_url( $attachment_id );
-	if ( ! $url ) {
-		return '';
-	}
-
 	$args = wp_parse_args(
 		$args,
 		array(
-			'class'          => '',
-			'alt'            => '',
-			'loading'        => 'eager',
-			'decoding'       => 'async',
-			'fetchpriority'  => '',
+			'class'         => '',
+			'alt'           => '',
+			'loading'       => 'eager',
+			'decoding'      => 'async',
+			'fetchpriority' => '',
+			'size'          => 'full',
+			'sizes'         => array(),
 		)
 	);
 
-	$meta   = wp_get_attachment_metadata( (int) $attachment_id );
-	$width  = ! empty( $meta['width'] ) ? (int) $meta['width'] : 1600;
-	$height = ! empty( $meta['height'] ) ? (int) $meta['height'] : 1067;
+	$sizes  = ! empty( $args['sizes'] ) ? (array) $args['sizes'] : array( (string) $args['size'] );
+	$picked = stillframe_pick_attachment( $attachment_id, $sizes );
+	if ( ! $picked['url'] ) {
+		return '';
+	}
+
+	$dimensions = stillframe_attachment_dimensions( $attachment_id, $picked['size'] );
 
 	$atts = array(
-		'src'      => $url,
+		'src'      => $picked['url'],
 		'alt'      => (string) $args['alt'],
-		'width'    => (string) $width,
-		'height'   => (string) $height,
+		'width'    => (string) $dimensions[0],
+		'height'   => (string) $dimensions[1],
 		'decoding' => (string) $args['decoding'],
 		'loading'  => (string) $args['loading'],
 	);
@@ -339,7 +524,7 @@ function stillframe_section_world_source( $section ) {
 
 	if ( $page_id ) {
 		$banner_id = (int) get_post_meta( $page_id, 'stillframe_banner_id', true );
-		$url       = stillframe_largest_attachment_url( $banner_id );
+		$url       = stillframe_world_attachment_url( $banner_id );
 		if ( $url ) {
 			return array(
 				'id'  => $banner_id,
@@ -349,7 +534,7 @@ function stillframe_section_world_source( $section ) {
 	}
 
 	$mod_id = (int) get_theme_mod( 'stillframe_hero_' . $section, 0 );
-	$url    = stillframe_largest_attachment_url( $mod_id );
+	$url    = stillframe_world_attachment_url( $mod_id );
 	if ( $url ) {
 		return array(
 			'id'  => $mod_id,
@@ -371,18 +556,6 @@ function stillframe_section_world_source( $section ) {
 		'id'  => 0,
 		'url' => '',
 	);
-}
-
-/**
- * Banner image URL for a site section.
- *
- * @param string $section home|about|gallery|projects|contact.
- * @return string
- */
-function stillframe_section_hero_url( $section ) {
-	$source = stillframe_section_world_source( $section );
-
-	return $source['url'];
 }
 
 /**
@@ -446,7 +619,7 @@ function stillframe_project_world_source( $post_id ) {
 	);
 
 	foreach ( $ids as $attachment_id ) {
-		$url = stillframe_largest_attachment_url( $attachment_id );
+		$url = stillframe_world_attachment_url( $attachment_id );
 		if ( $url ) {
 			return array(
 				'id'  => $attachment_id,
@@ -482,7 +655,7 @@ function stillframe_page_world_source() {
 
 	if ( is_singular( 'page' ) ) {
 		$banner_id = (int) get_post_meta( (int) get_queried_object_id(), 'stillframe_banner_id', true );
-		$url       = stillframe_largest_attachment_url( $banner_id );
+		$url       = stillframe_world_attachment_url( $banner_id );
 		if ( $url ) {
 			return array(
 				'id'  => $banner_id,
@@ -515,7 +688,7 @@ function stillframe_page_world_source() {
 }
 
 /**
- * Full-bleed photo behind the glass HUD.
+ * Full-bleed photo behind the page panel.
  *
  * @return string
  */
@@ -562,26 +735,6 @@ function stillframe_section_banner_page_id( $section ) {
 	}
 
 	return 0;
-}
-
-/**
- * Banner image URL stored on a page.
- *
- * @param int $page_id Page ID.
- * @return string
- */
-function stillframe_banner_url_from_page( $page_id ) {
-	$page_id = (int) $page_id;
-	if ( ! $page_id ) {
-		return '';
-	}
-
-	$banner_id = (int) get_post_meta( $page_id, 'stillframe_banner_id', true );
-	if ( ! $banner_id ) {
-		return '';
-	}
-
-	return stillframe_largest_attachment_url( $banner_id );
 }
 
 /**
@@ -646,7 +799,24 @@ function stillframe_url_to_page_id( $url ) {
 		return ( $post instanceof WP_Post && 'page' === $post->post_type ) ? (int) $post_id : 0;
 	}
 
-	$slug = $path ? basename( untrailingslashit( $path ) ) : '';
+	$home_path = trim( (string) wp_parse_url( home_url(), PHP_URL_PATH ), '/' );
+	$rel       = trim( (string) $path, '/' );
+	if ( $home_path ) {
+		if ( $rel === $home_path ) {
+			$rel = '';
+		} elseif ( 0 === strpos( $rel, $home_path . '/' ) ) {
+			$rel = substr( $rel, strlen( $home_path ) + 1 );
+		}
+	}
+
+	if ( $rel ) {
+		$page = get_page_by_path( $rel );
+		if ( $page instanceof WP_Post && 'publish' === $page->post_status ) {
+			return (int) $page->ID;
+		}
+	}
+
+	$slug = $rel ? basename( untrailingslashit( $rel ) ) : '';
 	if ( '' === $slug ) {
 		return 0;
 	}
@@ -719,10 +889,66 @@ function stillframe_order_ids_like_about_links( $ids, $about_id ) {
 }
 
 /**
+ * Page IDs in the same order as About timeline events.
+ *
+ * @param int $about_id About page ID.
+ * @return int[]
+ */
+function stillframe_about_timeline_page_ids( $about_id ) {
+	$about_id = (int) $about_id;
+	if ( ! $about_id ) {
+		return array();
+	}
+
+	$ids = array();
+	foreach ( stillframe_about_timeline_data( $about_id )['events'] as $event ) {
+		if ( empty( $event['page_id'] ) ) {
+			continue;
+		}
+		$ids[] = (int) $event['page_id'];
+	}
+
+	return array_values( array_unique( $ids ) );
+}
+
+/**
+ * Put page IDs in the same order as About timeline events.
+ *
+ * @param int[] $ids      Page IDs.
+ * @param int   $about_id About page ID.
+ * @return int[]
+ */
+function stillframe_order_ids_like_about_timeline( $ids, $about_id ) {
+	$ids   = array_values( array_unique( array_map( 'intval', $ids ) ) );
+	$order = stillframe_about_timeline_page_ids( $about_id );
+	if ( ! $ids || ! $order ) {
+		return $ids;
+	}
+
+	$rank = array_flip( $order );
+	$head = array();
+	$tail = array();
+
+	foreach ( $order as $id ) {
+		if ( in_array( $id, $ids, true ) ) {
+			$head[] = $id;
+		}
+	}
+
+	foreach ( $ids as $id ) {
+		if ( ! isset( $rank[ $id ] ) ) {
+			$tail[] = $id;
+		}
+	}
+
+	return array_values( array_unique( array_merge( $head, $tail ) ) );
+}
+
+/**
  * Links in the About header dropdown.
  *
  * Uses pages picked on the About screen, then child pages, then on-page headings.
- * Chosen pages follow the order of links in the About copy.
+ * Chosen pages follow the order of events on the About timeline.
  *
  * @return array<int, array{url:string, label:string, current:bool}>
  */
@@ -736,9 +962,14 @@ function stillframe_about_dropdown_items() {
 	$items    = array();
 	$ids      = stillframe_about_dropdown_page_ids( $about_id );
 	$linked   = stillframe_about_content_page_ids( $about_id );
+	$timeline = stillframe_about_timeline_page_ids( $about_id );
 
-	if ( $ids && $linked ) {
+	if ( $ids && $timeline ) {
+		$ids = stillframe_order_ids_like_about_timeline( $ids, $about_id );
+	} elseif ( $ids && $linked ) {
 		$ids = stillframe_order_ids_like_about_links( $ids, $about_id );
+	} elseif ( ! $ids && $timeline ) {
+		$ids = $timeline;
 	} elseif ( ! $ids && $linked ) {
 		$ids = $linked;
 	}
@@ -1026,15 +1257,21 @@ function stillframe_card_thumbnail_id( $post_id ) {
 /**
  * HTML for a card thumbnail.
  *
+ * Prefers a smaller uncropped derivative when that file exists, so cards
+ * do not download the full photo. Framing stays the same under object-fit.
+ *
  * @param int    $post_id Post ID.
- * @param string $size    Unused; kept so existing calls stay valid.
  * @param string $class   Image class.
  * @return string
  */
-function stillframe_get_card_image( $post_id, $size, $class ) {
-	unset( $size );
-
-	return stillframe_post_img( $post_id, $class );
+function stillframe_get_card_image( $post_id, $class ) {
+	return stillframe_post_img(
+		$post_id,
+		$class,
+		array(
+			'sizes' => stillframe_card_image_sizes(),
+		)
+	);
 }
 
 /**
@@ -1046,12 +1283,13 @@ function stillframe_get_card_image( $post_id, $size, $class ) {
  */
 function stillframe_series_preview_photos( $term_id, $count = 3 ) {
 	$count = max( 1, (int) $count );
-	$posts = get_posts(
+	$ids   = get_posts(
 		array(
 			'post_type'      => 'photograph',
 			'posts_per_page' => 24,
 			'orderby'        => 'title',
 			'order'          => 'ASC',
+			'fields'         => 'ids',
 			'no_found_rows'  => true,
 			'tax_query'      => array(
 				array(
@@ -1065,12 +1303,19 @@ function stillframe_series_preview_photos( $term_id, $count = 3 ) {
 
 	$with_image = array();
 
-	foreach ( $posts as $post ) {
-		if ( stillframe_card_thumbnail_id( $post->ID ) ) {
+	foreach ( $ids as $post_id ) {
+		$post_id = (int) $post_id;
+		if ( ! stillframe_card_thumbnail_id( $post_id ) ) {
+			continue;
+		}
+
+		$post = get_post( $post_id );
+		if ( $post instanceof WP_Post ) {
 			$with_image[] = $post;
-			if ( count( $with_image ) >= $count ) {
-				break;
-			}
+		}
+
+		if ( count( $with_image ) >= $count ) {
+			break;
 		}
 	}
 
@@ -1178,6 +1423,40 @@ function stillframe_is_about_page( $page_id = 0 ) {
 	}
 
 	return 'template-about.php' === get_page_template_slug( $page_id );
+}
+
+/**
+ * Whether this page is linked from About (dropdown, child page, or About copy).
+ *
+ * @param int $page_id Optional page ID. Defaults to the current post.
+ * @return bool
+ */
+function stillframe_is_about_subpage( $page_id = 0 ) {
+	$page_id = $page_id ? (int) $page_id : (int) get_the_ID();
+	if ( ! $page_id ) {
+		return false;
+	}
+
+	if ( stillframe_is_about_page( $page_id ) || stillframe_is_contact_page( $page_id ) || stillframe_is_home_page( $page_id ) ) {
+		return false;
+	}
+
+	if ( stillframe_is_resume_page( $page_id ) ) {
+		return true;
+	}
+
+	$about    = stillframe_get_section_page( 'about' );
+	$about_id = $about instanceof WP_Post ? (int) $about->ID : 0;
+
+	if ( $about_id && (int) wp_get_post_parent_id( $page_id ) === $about_id ) {
+		return true;
+	}
+
+	if ( in_array( $page_id, stillframe_about_dropdown_page_ids( $about_id ), true ) ) {
+		return true;
+	}
+
+	return $about_id && in_array( $page_id, stillframe_about_content_page_ids( $about_id ), true );
 }
 
 /**
@@ -1540,7 +1819,7 @@ function stillframe_body_class( $classes ) {
 
 	if ( is_front_page() ) {
 		$classes[] = 'vibe-home';
-	} elseif ( is_page( 'about' ) || is_page_template( 'template-about.php' ) || ( is_singular( 'page' ) && ( stillframe_is_about_page( get_queried_object_id() ) || stillframe_is_resume_page( get_queried_object_id() ) ) ) ) {
+	} elseif ( is_singular( 'page' ) && ( stillframe_is_about_page( get_queried_object_id() ) || stillframe_is_about_subpage( get_queried_object_id() ) ) ) {
 		$classes[] = 'vibe-about';
 	} elseif ( is_page( 'contact' ) || is_page_template( 'template-contact.php' ) || ( is_singular( 'page' ) && stillframe_is_contact_page( get_queried_object_id() ) ) ) {
 		$classes[] = 'vibe-contact';
@@ -1576,22 +1855,37 @@ function stillframe_content_headings( $content, $min_level = 2, $max_level = 3 )
 	$max_level = max( $min_level, min( 4, (int) $max_level ) );
 	$used      = array();
 
-	if ( ! preg_match_all( '/<h([2-4])(\s[^>]*)?>(.*?)<\/h\1>/is', $content, $matches, PREG_SET_ORDER ) ) {
+	if ( ! preg_match_all( '/<h([2-4])(\s[^>]*)?>(.*?)<\/h\1>/is', $content, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE ) ) {
 		return $items;
 	}
 
-	foreach ( $matches as $match ) {
-		$level = (int) $match[1];
+	$count = count( $matches );
+	for ( $i = 0; $i < $count; $i++ ) {
+		$match = $matches[ $i ];
+		$level = (int) $match[1][0];
 		if ( $level < $min_level || $level > $max_level ) {
 			continue;
 		}
 
-		$title = trim( wp_strip_all_tags( $match[3] ) );
+		$title = trim( wp_strip_all_tags( $match[3][0] ) );
 		if ( '' === $title ) {
 			continue;
 		}
 
-		$attrs = isset( $match[2] ) ? $match[2] : '';
+		$heading_end = $match[0][1] + strlen( $match[0][0] );
+		$next_start  = strlen( $content );
+		for ( $j = $i + 1; $j < $count; $j++ ) {
+			if ( (int) $matches[ $j ][1][0] <= $level ) {
+				$next_start = (int) $matches[ $j ][0][1];
+				break;
+			}
+		}
+		$following = substr( $content, $heading_end, max( 0, $next_start - $heading_end ) );
+		if ( ! stillframe_section_has_body( $following ) ) {
+			continue;
+		}
+
+		$attrs = isset( $match[2][0] ) ? $match[2][0] : '';
 		$id    = '';
 		if ( preg_match( '/\sid\s*=\s*([\'"])([^\'"]+)\1/i', $attrs, $id_match ) ) {
 			$id = sanitize_title( $id_match[2] );
@@ -1658,9 +1952,134 @@ function stillframe_about_timeline_page_excerpt( $page_id ) {
 }
 
 /**
+ * Pages the About timeline can point at: dropdown, children, and in-copy links.
+ *
+ * @param int $about_id About page ID.
+ * @return int[]
+ */
+function stillframe_about_related_page_ids( $about_id ) {
+	$about_id = (int) $about_id;
+	$ids      = stillframe_about_dropdown_page_ids( $about_id );
+
+	if ( $about_id ) {
+		$children = get_pages(
+			array(
+				'parent'      => $about_id,
+				'post_status' => 'publish',
+				'sort_column' => 'menu_order,post_title',
+			)
+		);
+		foreach ( $children as $child ) {
+			if ( $child instanceof WP_Post ) {
+				$ids[] = (int) $child->ID;
+			}
+		}
+	}
+
+	$ids = array_merge( $ids, stillframe_about_content_page_ids( $about_id ) );
+	$ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
+
+	return stillframe_order_ids_like_about_links( $ids, $about_id );
+}
+
+/**
+ * Collapse a title for loose About timeline matching.
+ *
+ * @param string $title Title.
+ * @return string
+ */
+function stillframe_about_timeline_normalize_title( $title ) {
+	$title = strtolower( html_entity_decode( wp_strip_all_tags( (string) $title ), ENT_QUOTES, 'UTF-8' ) );
+	$title = preg_replace( '/[()]/', ' ', $title );
+	$title = str_replace( array( '&', '/', '+' ), ' ', $title );
+	$title = preg_replace( '/[^a-z0-9]+/', ' ', $title );
+	$title = preg_replace( '/\b(and|the|a|an|of|at|for|in|to|my|work)\b/', ' ', $title );
+
+	return trim( preg_replace( '/\s+/', ' ', (string) $title ) );
+}
+
+/**
+ * Whether two About titles refer to the same section.
+ *
+ * @param string $a Title.
+ * @param string $b Title.
+ * @return bool
+ */
+function stillframe_about_timeline_titles_match( $a, $b ) {
+	$a = stillframe_about_timeline_normalize_title( $a );
+	$b = stillframe_about_timeline_normalize_title( $b );
+	if ( '' === $a || '' === $b ) {
+		return false;
+	}
+	if ( $a === $b ) {
+		return true;
+	}
+	if ( false !== strpos( $a, $b ) || false !== strpos( $b, $a ) ) {
+		return true;
+	}
+
+	$stem = static function ( $word ) {
+		return preg_replace( '/(ing|ment|tion|ence|ance|ed|er|es|s)$/', '', $word );
+	};
+
+	$wa      = array_values( array_filter( array_map( $stem, preg_split( '/\s+/', $a ) ) ) );
+	$wb      = array_values( array_filter( array_map( $stem, preg_split( '/\s+/', $b ) ) ) );
+	$overlap = array_values(
+		array_filter(
+			array_intersect( $wa, $wb ),
+			static function ( $word ) {
+				return strlen( (string) $word ) >= 4;
+			}
+		)
+	);
+
+	if ( ! $overlap ) {
+		return false;
+	}
+	if ( count( $overlap ) >= 2 ) {
+		return true;
+	}
+
+	return strlen( (string) $overlap[0] ) >= 6;
+}
+
+/**
+ * Timeline card data from a related page.
+ *
+ * @param int $page_id Page ID.
+ * @return array{id:string, title:string, html:string, url:string, page_id:int}|null
+ */
+function stillframe_about_timeline_event_from_page( $page_id ) {
+	$page_id = (int) $page_id;
+	$page    = get_post( $page_id );
+	if ( ! $page instanceof WP_Post || 'publish' !== $page->post_status ) {
+		return null;
+	}
+
+	$url = get_permalink( $page );
+	if ( ! $url ) {
+		return null;
+	}
+
+	$title = get_the_title( $page );
+	$id    = sanitize_title( $title );
+	if ( '' === $id ) {
+		$id = 'page-' . $page_id;
+	}
+
+	return array(
+		'id'      => $id,
+		'title'   => $title,
+		'html'    => stillframe_about_timeline_page_excerpt( $page_id ),
+		'url'     => $url,
+		'page_id' => $page_id,
+	);
+}
+
+/**
  * Page a timeline heading should open, from its section links or title.
  *
- * @param string $html     Section HTML.
+ * @param string $html     Section HTML, including the heading if it is a link.
  * @param string $title    Heading text.
  * @param int    $about_id About page ID.
  * @return int
@@ -1691,16 +2110,39 @@ function stillframe_about_timeline_event_page_id( $html, $title, $about_id ) {
 		}
 	}
 
-	foreach ( stillframe_about_dropdown_page_ids( $about_id ) as $page_id ) {
-		$page_title = get_the_title( $page_id );
-		if ( strcasecmp( $page_title, $title ) === 0 || sanitize_title( $page_title ) === $slug ) {
-			return (int) $page_id;
+	$bare_slug = sanitize_title( stillframe_about_timeline_normalize_title( $title ) );
+	$paths     = array_values( array_unique( array_filter( array( $slug, $bare_slug ) ) ) );
+	$about     = $about_id ? get_post( $about_id ) : null;
+	if ( $about instanceof WP_Post && $about->post_name ) {
+		foreach ( $paths as $path_slug ) {
+			$paths[] = $about->post_name . '/' . $path_slug;
+		}
+		$paths = array_values( array_unique( $paths ) );
+	}
+
+	foreach ( $paths as $path ) {
+		$by_path = get_page_by_path( $path );
+		if ( $by_path instanceof WP_Post && (int) $by_path->ID !== $about_id && 'publish' === $by_path->post_status ) {
+			return (int) $by_path->ID;
 		}
 	}
 
-	$by_path = get_page_by_path( $slug );
-	if ( $by_path instanceof WP_Post && (int) $by_path->ID !== $about_id && 'publish' === $by_path->post_status ) {
-		return (int) $by_path->ID;
+	foreach ( stillframe_about_related_page_ids( $about_id ) as $page_id ) {
+		$page = get_post( $page_id );
+		if ( ! $page instanceof WP_Post ) {
+			continue;
+		}
+
+		$page_title = get_the_title( $page );
+		if (
+			strcasecmp( $page_title, $title ) === 0
+			|| sanitize_title( $page_title ) === $slug
+			|| sanitize_title( $page->post_name ) === $slug
+			|| stillframe_about_timeline_titles_match( $page_title, $title )
+			|| stillframe_about_timeline_titles_match( $page->post_name, $title )
+		) {
+			return (int) $page_id;
+		}
 	}
 
 	$query = new WP_Query(
@@ -1736,18 +2178,26 @@ function stillframe_about_timeline_data( $post_id = 0 ) {
 		'events' => array(),
 	);
 
+	static $cache = array();
+	if ( isset( $cache[ $post_id ] ) ) {
+		return $cache[ $post_id ];
+	}
+
 	$post = get_post( $post_id );
 	if ( ! $post instanceof WP_Post ) {
+		$cache[ $post_id ] = $empty;
 		return $empty;
 	}
 
 	$content = (string) $post->post_content;
 	if ( '' === trim( $content ) ) {
+		$cache[ $post_id ] = $empty;
 		return $empty;
 	}
 
 	$parts = preg_split( '/(<h[2-4]\b[^>]*>.*?<\/h[2-4]>)/is', $content, -1, PREG_SPLIT_DELIM_CAPTURE );
 	if ( ! is_array( $parts ) ) {
+		$cache[ $post_id ] = $empty;
 		return $empty;
 	}
 
@@ -1783,9 +2233,10 @@ function stillframe_about_timeline_data( $post_id = 0 ) {
 			}
 
 			$current = array(
-				'id'    => $id,
-				'title' => $title,
-				'html'  => '',
+				'id'      => $id,
+				'title'   => $title,
+				'html'    => '',
+				'heading' => $part,
 			);
 			continue;
 		}
@@ -1808,7 +2259,8 @@ function stillframe_about_timeline_data( $post_id = 0 ) {
 			continue;
 		}
 
-		$page_id = stillframe_about_timeline_event_page_id( $item['html'], $item['title'], $post_id );
+		$lookup  = ( isset( $item['heading'] ) ? $item['heading'] : '' ) . $item['html'];
+		$page_id = stillframe_about_timeline_event_page_id( $lookup, $item['title'], $post_id );
 		if ( ! $page_id ) {
 			continue;
 		}
@@ -1823,43 +2275,69 @@ function stillframe_about_timeline_data( $post_id = 0 ) {
 		}
 
 		$events[] = array(
-			'id'    => $item['id'],
-			'title' => $item['title'],
-			'html'  => $html,
-			'url'   => $url,
-			'side'  => 0 === $index % 2 ? 'left' : 'right',
+			'id'      => $item['id'],
+			'title'   => $item['title'],
+			'html'    => $html,
+			'url'     => $url,
+			'page_id' => $page_id,
+			'side'    => 0 === $index % 2 ? 'left' : 'right',
 		);
 		++$index;
 	}
 
-	if ( ! $events ) {
-		$ids = stillframe_about_dropdown_page_ids( $post_id );
-		if ( $ids ) {
-			$ids = stillframe_order_ids_like_about_links( $ids, $post_id );
-		} else {
-			$ids = stillframe_about_content_page_ids( $post_id );
+	$used_pages = array();
+	foreach ( $events as $event ) {
+		if ( ! empty( $event['page_id'] ) ) {
+			$used_pages[] = (int) $event['page_id'];
+		}
+	}
+
+	$missing_ids = stillframe_about_dropdown_page_ids( $post_id );
+	if ( $missing_ids ) {
+		$missing_ids = stillframe_order_ids_like_about_links( $missing_ids, $post_id );
+	} elseif ( ! $events ) {
+		$missing_ids = stillframe_about_content_page_ids( $post_id );
+	} else {
+		$missing_ids = array();
+	}
+
+	$link_rank = array_flip( stillframe_about_content_page_ids( $post_id ) );
+	foreach ( $missing_ids as $page_id ) {
+		$page_id = (int) $page_id;
+		if ( ! $page_id || in_array( $page_id, $used_pages, true ) ) {
+			continue;
 		}
 
-		foreach ( $ids as $page_id ) {
-			$page = get_post( $page_id );
-			if ( ! $page instanceof WP_Post || 'publish' !== $page->post_status ) {
-				continue;
-			}
-
-			$url = get_permalink( $page );
-			if ( ! $url ) {
-				continue;
-			}
-
-			$events[] = array(
-				'id'    => sanitize_title( get_the_title( $page ) ),
-				'title' => get_the_title( $page ),
-				'html'  => stillframe_about_timeline_page_excerpt( (int) $page->ID ),
-				'url'   => $url,
-				'side'  => 0 === $index % 2 ? 'left' : 'right',
-			);
-			++$index;
+		$extra = stillframe_about_timeline_event_from_page( $page_id );
+		if ( ! $extra ) {
+			continue;
 		}
+
+		$base = $extra['id'];
+		$n    = 2;
+		while ( isset( $used[ $extra['id'] ] ) ) {
+			$extra['id'] = $base . '-' . $n;
+			++$n;
+		}
+		$used[ $extra['id'] ] = true;
+
+		$insert_at = count( $events );
+		if ( isset( $link_rank[ $page_id ] ) ) {
+			$insert_at = 0;
+			foreach ( $events as $i => $event ) {
+				$eid = isset( $event['page_id'] ) ? (int) $event['page_id'] : 0;
+				if ( isset( $link_rank[ $eid ] ) && $link_rank[ $eid ] < $link_rank[ $page_id ] ) {
+					$insert_at = $i + 1;
+				}
+			}
+		}
+
+		array_splice( $events, $insert_at, 0, array( $extra ) );
+		$used_pages[] = $page_id;
+	}
+
+	foreach ( $events as $i => $event ) {
+		$events[ $i ]['side'] = 0 === $i % 2 ? 'left' : 'right';
 	}
 
 	$intro_html = stillframe_about_timeline_plain_html( $intro );
@@ -1868,10 +2346,238 @@ function stillframe_about_timeline_data( $post_id = 0 ) {
 		$intro_out = apply_filters( 'the_content', $intro );
 	}
 
-	return array(
+	$result = array(
 		'intro'  => $intro_out,
 		'events' => $events,
 	);
+	$cache[ $post_id ] = $result;
+
+	return $result;
+}
+
+/**
+ * Whether a content fragment has anything besides an empty heading.
+ *
+ * @param string $html HTML.
+ * @return bool
+ */
+function stillframe_section_has_body( $html ) {
+	$html = preg_replace( '/<!--.*?-->/s', '', (string) $html );
+	if ( preg_match( '/<(img|figure|iframe|video|audio|svg|object|embed|ul|ol|blockquote|table|hr|pre|canvas)\b/i', $html ) ) {
+		return true;
+	}
+
+	$html = preg_replace( '/<h[1-6]\b[^>]*>.*?<\/h[1-6]>/is', '', $html );
+	$text = html_entity_decode( wp_strip_all_tags( $html ), ENT_QUOTES, 'UTF-8' );
+	$text = preg_replace( '/\x{00A0}/u', ' ', $text );
+
+	return '' !== trim( (string) $text );
+}
+
+/**
+ * Wrap a content fragment in a lifted glass section.
+ *
+ * @param string $inner HTML.
+ * @return string
+ */
+function stillframe_glass_lift_html( $inner ) {
+	$inner = trim( (string) $inner );
+	if ( '' === $inner || ! stillframe_section_has_body( $inner ) ) {
+		return '';
+	}
+
+	return '<section class="glass-lift">' . $inner . '</section>';
+}
+
+/**
+ * Heading id from a single heading tag.
+ *
+ * @param string $html Heading markup.
+ * @return string
+ */
+function stillframe_heading_id_from_markup( $html ) {
+	$html = (string) $html;
+	if ( preg_match( '/\sid\s*=\s*([\'"])([^\'"]+)\1/i', $html, $match ) ) {
+		return sanitize_title( $match[2] );
+	}
+
+	if ( preg_match( '/<h[1-6]\b[^>]*>(.*?)<\/h[1-6]>/is', $html, $match ) ) {
+		return sanitize_title( wp_strip_all_tags( $match[1] ) );
+	}
+
+	return '';
+}
+
+/**
+ * Pages and projects that wrap headings in glass lifts.
+ *
+ * @param int $post_id Post ID.
+ * @return bool
+ */
+function stillframe_page_uses_section_wrap( $post_id ) {
+	$post_id = (int) $post_id;
+	if ( 'project' === get_post_type( $post_id ) ) {
+		return true;
+	}
+
+	if ( 'page' !== get_post_type( $post_id ) ) {
+		return false;
+	}
+
+	if ( stillframe_is_about_page( $post_id ) || stillframe_is_home_page( $post_id ) || stillframe_is_contact_page( $post_id ) ) {
+		return false;
+	}
+
+	return stillframe_is_about_subpage( $post_id ) || stillframe_is_resume_page( $post_id );
+}
+
+/**
+ * Heading range used when wrapping this post into lifts.
+ *
+ * @param int $post_id Post ID.
+ * @return array{0:int,1:int}
+ */
+function stillframe_section_wrap_levels( $post_id = 0 ) {
+	$post_id = $post_id ? (int) $post_id : (int) get_the_ID();
+	if ( 'project' === get_post_type( $post_id ) ) {
+		return array( 3, 3 );
+	}
+
+	return array( 2, 3 );
+}
+
+/**
+ * Saved heading ids that should stay in the previous lift.
+ *
+ * @param int $post_id Post ID.
+ * @return string[]
+ */
+function stillframe_joined_section_ids( $post_id ) {
+	$raw = get_post_meta( (int) $post_id, 'stillframe_joined_sections', true );
+	if ( ! is_array( $raw ) ) {
+		return array();
+	}
+
+	$ids = array();
+	foreach ( $raw as $id ) {
+		$id = sanitize_title( (string) $id );
+		if ( '' !== $id ) {
+			$ids[] = $id;
+		}
+	}
+
+	return array_values( array_unique( $ids ) );
+}
+
+/**
+ * Headings that start a new lift and can be joined to the one above.
+ *
+ * @param int $post_id    Post ID.
+ * @param int $min_level  2–4.
+ * @param int $max_level  2–4.
+ * @return array<int, array{id:string, title:string, level:int}>
+ */
+function stillframe_joinable_headings( $post_id, $min_level = 2, $max_level = 3 ) {
+	$post = get_post( (int) $post_id );
+	if ( ! $post instanceof WP_Post ) {
+		return array();
+	}
+
+	$content   = (string) $post->post_content;
+	$min_level = max( 2, min( 4, (int) $min_level ) );
+	$max_level = max( $min_level, min( 4, (int) $max_level ) );
+
+	$split_level = 0;
+	for ( $level = $min_level; $level <= $max_level; $level++ ) {
+		if ( preg_match( '/<h' . $level . '\b/i', $content ) ) {
+			$split_level = $level;
+			break;
+		}
+	}
+
+	if ( ! $split_level ) {
+		return array();
+	}
+
+	$items = stillframe_content_headings( $content, $min_level, $max_level );
+	if ( ! $items ) {
+		$items = stillframe_content_headings( $content, 2, 4 );
+	}
+
+	$joinable = array();
+	foreach ( $items as $item ) {
+		if ( (int) $item['level'] === $split_level ) {
+			$joinable[] = $item;
+		}
+	}
+
+	return $joinable;
+}
+
+/**
+ * Split HTML on top-level headings so each major section sits on its own panel.
+ *
+ * Nested headings (H3 under H2, and so on) stay inside the same lift.
+ * Headings marked “join with previous” in the editor stay in the previous lift.
+ *
+ * @param string $html      Filtered post content.
+ * @param int    $min_level 2–4.
+ * @param int    $max_level 2–4.
+ * @param int    $post_id   Post whose join list to use.
+ * @return string
+ */
+function stillframe_wrap_content_sections( $html, $min_level = 2, $max_level = 3, $post_id = 0 ) {
+	$html = trim( (string) $html );
+	if ( '' === $html ) {
+		return '';
+	}
+
+	$min_level = max( 2, min( 4, (int) $min_level ) );
+	$max_level = max( $min_level, min( 4, (int) $max_level ) );
+	$post_id   = $post_id ? (int) $post_id : (int) get_the_ID();
+	$joined    = $post_id ? stillframe_joined_section_ids( $post_id ) : array();
+
+	$split_level = 0;
+	for ( $level = $min_level; $level <= $max_level; $level++ ) {
+		if ( preg_match( '/<h' . $level . '\b/i', $html ) ) {
+			$split_level = $level;
+			break;
+		}
+	}
+
+	if ( ! $split_level ) {
+		return stillframe_glass_lift_html( $html );
+	}
+
+	$pattern = '/(<h' . $split_level . '\b[^>]*>.*?<\/h' . $split_level . '>)/is';
+	$parts   = preg_split( $pattern, $html, -1, PREG_SPLIT_DELIM_CAPTURE );
+
+	if ( ! is_array( $parts ) || count( $parts ) < 2 ) {
+		return stillframe_glass_lift_html( $html );
+	}
+
+	$out    = '';
+	$buffer = '';
+
+	foreach ( $parts as $part ) {
+		if ( preg_match( '/^<h' . $split_level . '\b/i', $part ) ) {
+			$id = stillframe_heading_id_from_markup( $part );
+			if ( $id && in_array( $id, $joined, true ) && '' !== trim( $buffer ) ) {
+				$buffer .= $part;
+				continue;
+			}
+
+			$out   .= stillframe_glass_lift_html( $buffer );
+			$buffer = $part;
+			continue;
+		}
+
+		$buffer .= $part;
+	}
+
+	$out .= stillframe_glass_lift_html( $buffer );
+
+	return $out ? $out : stillframe_glass_lift_html( $html );
 }
 
 /**
@@ -1923,7 +2629,7 @@ function stillframe_about_heading_ids( $content ) {
 	}
 
 	$levels = '';
-	if ( is_singular( 'page' ) && stillframe_is_about_page() ) {
+	if ( is_singular( 'page' ) && ( stillframe_is_about_page() || stillframe_is_about_subpage() || stillframe_is_resume_page() ) ) {
 		$levels = '2-4';
 	} elseif ( is_singular( 'project' ) ) {
 		$levels = '3';

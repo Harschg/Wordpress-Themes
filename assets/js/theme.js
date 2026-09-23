@@ -14,8 +14,16 @@
 			return;
 		}
 		readyCalled = true;
+		prepareScrollReveals();
 		body.classList.add("is-ready");
 		bindReveals();
+		if (window.location.hash) {
+			var bootId = window.location.hash.replace(/^#/, "");
+			var bootTarget = document.getElementById(bootId);
+			if (bootTarget && bootTarget.classList.contains("about-timeline__event")) {
+				openAboutTimelineEvent(bootTarget);
+			}
+		}
 		if (loader) {
 			loader.setAttribute("aria-hidden", "true");
 			loader.removeAttribute("role");
@@ -39,7 +47,7 @@
 			return;
 		}
 
-		if (img.closest(".site-brand, .project-single, .about, .photo-card--arch")) {
+		if (img.closest(".site-brand, .project-single, .about, .photo-card--arch, .page-world")) {
 			img.classList.add("is-in");
 			return;
 		}
@@ -127,7 +135,13 @@
 			return;
 		}
 
-		projectContentBlocks(root).forEach(markReveal);
+		projectContentBlocks(root).forEach(function (el) {
+			if (el.classList && el.classList.contains("glass-lift")) {
+				markReveal(el);
+				return;
+			}
+			markReveal(el);
+		});
 		root.querySelectorAll("figure, .wp-block-image, .wp-block-media-text").forEach(function (el) {
 			if (!el.closest("[data-reveal]")) {
 				markReveal(el);
@@ -146,12 +160,11 @@
 		var project = document.querySelector(".project-single");
 		if (project) {
 			prepareContentReveals(project.querySelector(".project-single__intro"));
-			project.querySelectorAll(".project-feature__copy").forEach(markReveal);
 
 			var slide = 0;
 			project
 				.querySelectorAll(
-					".project-single__intro figure, .project-single__intro .wp-block-image, .project-single__intro .wp-block-media-text, .project-single__intro > p > img, .project-feature__media"
+					".project-single__intro figure, .project-single__intro .wp-block-image, .project-single__intro .wp-block-media-text, .project-single__intro p > img, .project-feature__media"
 				)
 				.forEach(function (el) {
 					if (el.nodeName === "IMG" && el.parentNode && el.parentNode.matches("p")) {
@@ -174,7 +187,96 @@
 			});
 		}
 
+		prepareAboutSubpageDrifts();
+		prepareGlassLiftReveals();
 		prepareGalleryArches();
+	}
+
+	function prepareAboutSubpageDrifts() {
+		var page = document.querySelector(".about-subpage");
+		if (!page) {
+			return;
+		}
+
+		var root = page.querySelector(".about__copy .prose") || page.querySelector(".prose");
+		if (!root) {
+			return;
+		}
+
+		function imageMotion(el) {
+			if (!el) {
+				return "drift";
+			}
+
+			var styled = el.closest
+				? el.closest(".is-style-slide-in, .is-style-fade-in, .is-style-tilt-in")
+				: null;
+			if (!styled && el.querySelector) {
+				styled = el.querySelector(".is-style-slide-in, .is-style-fade-in, .is-style-tilt-in");
+			}
+			if (styled) {
+				if (styled.classList.contains("is-style-fade-in")) {
+					return "fade";
+				}
+				if (styled.classList.contains("is-style-slide-in")) {
+					return "slide";
+				}
+				return "drift";
+			}
+
+			var classes = String(el.className || "");
+			var img = el.querySelector ? el.querySelector("img") : null;
+			if (img && img.className) {
+				classes += " " + img.className;
+			}
+			if (/\bis-style-fade-in\b/.test(classes) || /\breveal--fade\b/.test(classes)) {
+				return "fade";
+			}
+			if (/\bis-style-slide-in\b/.test(classes) || /\breveal--slide\b/.test(classes)) {
+				return "slide";
+			}
+			return "drift";
+		}
+
+		function markPhoto(el) {
+			if (!el || el.closest(".about-timeline__card, .about-timeline__card-body, .resume-embed")) {
+				return;
+			}
+
+			var motion = imageMotion(el);
+			if (motion === "fade") {
+				markReveal(el);
+			} else {
+				markSlideReveal(el, true);
+			}
+			el.classList.add("reveal--photo");
+			el.classList.add("reveal--" + motion);
+		}
+
+		root.querySelectorAll("figure, .wp-block-image, .wp-block-media-text").forEach(markPhoto);
+
+		function markBareImageParagraphs(node) {
+			Array.prototype.forEach.call(node.children, function (el) {
+				if (el.classList && el.classList.contains("glass-lift")) {
+					markBareImageParagraphs(el);
+					return;
+				}
+				if (el.nodeName === "P" && el.querySelector(":scope > img") && !el.querySelector(":scope > :not(img):not(br)")) {
+					markPhoto(el);
+				}
+			});
+		}
+
+		markBareImageParagraphs(root);
+	}
+
+	function prepareGlassLiftReveals() {
+		document.querySelectorAll(".glass-lift").forEach(function (el) {
+			if (el.closest(".about-timeline__card, .about-timeline__card-body")) {
+				return;
+			}
+			markReveal(el);
+		});
 	}
 
 	function prepareGalleryArches() {
@@ -308,27 +410,12 @@
 		window.requestAnimationFrame(frame);
 	}
 
-	prepareScrollReveals();
-
 	var revealObserver = null;
 	var revealsBound = false;
 	var revealBusy = false;
 
 	function revealItems() {
 		return Array.prototype.slice.call(document.querySelectorAll("[data-reveal]"));
-	}
-
-	function nextPendingReveal() {
-		var items = revealItems();
-		var i;
-
-		for (i = 0; i < items.length; i++) {
-			if (!items[i].classList.contains("is-visible") && !items[i].classList.contains("is-arching")) {
-				return items[i];
-			}
-		}
-
-		return null;
 	}
 
 	function revealKind(el) {
@@ -338,7 +425,7 @@
 		if (el.classList.contains("photo-card--arch")) {
 			return "arch";
 		}
-		if (el.classList.contains("about-timeline__event")) {
+		if (el.classList.contains("about-timeline__event") || el.classList.contains("glass-lift") || el.classList.contains("reveal--photo")) {
 			return "solo";
 		}
 		if (
@@ -486,6 +573,18 @@
 		if (el.classList.contains("about-timeline__event")) {
 			return 280;
 		}
+		if (el.classList.contains("glass-lift")) {
+			return 860;
+		}
+		if (el.classList.contains("reveal--drift")) {
+			return 1180;
+		}
+		if (el.classList.contains("reveal--slide")) {
+			return 920;
+		}
+		if (el.classList.contains("reveal--fade")) {
+			return 420;
+		}
 		if (el.classList.contains("reveal--from-left") || el.classList.contains("reveal--from-right")) {
 			return 920;
 		}
@@ -548,23 +647,8 @@
 			});
 	}
 
-	function showReveal(el) {
-		if (!el || el.classList.contains("is-visible") || el.classList.contains("is-arching")) {
-			return;
-		}
-		if (reduced) {
-			el.classList.add("is-visible");
-			return;
-		}
-		tryAdvanceReveals();
-	}
-
 	function pendingReveals() {
 		return document.querySelectorAll("[data-reveal]:not(.is-visible)");
-	}
-
-	function revealOnscreen() {
-		tryAdvanceReveals();
 	}
 
 	function bindReveals() {
@@ -572,8 +656,6 @@
 			return;
 		}
 		revealsBound = true;
-
-		prepareScrollReveals();
 
 		document.querySelectorAll("[data-reveal]").forEach(function (el) {
 			var stagger = el.getAttribute("data-stagger");
@@ -612,9 +694,9 @@
 			revealObserver.observe(el);
 		});
 
-		revealOnscreen();
-		window.addEventListener("scroll", revealOnscreen, { passive: true });
-		window.addEventListener("resize", revealOnscreen);
+		tryAdvanceReveals();
+		window.addEventListener("scroll", tryAdvanceReveals, { passive: true });
+		window.addEventListener("resize", tryAdvanceReveals);
 	}
 
 	(function bindPressTilt() {
@@ -832,8 +914,70 @@
 	}
 
 	var timeline = document.querySelector("[data-about-timeline]");
+	var openAboutTimelineEvent = function () {};
+
 	if (timeline) {
 		var timelineEvents = Array.prototype.slice.call(timeline.querySelectorAll(".about-timeline__event"));
+
+		function setTimelineEventOpen(el, isOpen) {
+			var button = el.querySelector(".about-timeline__topic");
+			var panel = el.querySelector(".about-timeline__card");
+			el.classList.toggle("is-open", isOpen);
+			if (button) {
+				button.setAttribute("aria-expanded", isOpen ? "true" : "false");
+			}
+			if (panel) {
+				if (isOpen) {
+					panel.removeAttribute("inert");
+				} else {
+					panel.setAttribute("inert", "");
+				}
+			}
+		}
+
+		function closeOtherTimelineEvents(keep) {
+			timeline.querySelectorAll(".about-timeline__event.is-open").forEach(function (el) {
+				if (el === keep) {
+					return;
+				}
+				var panel = el.querySelector(".about-timeline__card");
+				if (panel) {
+					panel.classList.add("is-instant");
+				}
+				setTimelineEventOpen(el, false);
+				if (panel) {
+					panel.offsetHeight;
+					panel.classList.remove("is-instant");
+				}
+			});
+		}
+
+		openAboutTimelineEvent = function (item) {
+			if (!item || !timeline.contains(item)) {
+				return;
+			}
+
+			item.classList.add("is-visible");
+
+			var anchor = item.querySelector(".about-timeline__heading") || item;
+			var before = anchor.getBoundingClientRect().top;
+			var alreadyOpen = item.classList.contains("is-open");
+
+			closeOtherTimelineEvents(item);
+
+			var shift = anchor.getBoundingClientRect().top - before;
+			if (shift) {
+				window.scrollBy(0, shift);
+			}
+
+			if (!alreadyOpen) {
+				setTimelineEventOpen(item, true);
+			}
+
+			window.requestAnimationFrame(function () {
+				anchor.scrollIntoView({ block: "start", behavior: "auto" });
+			});
+		};
 
 		function updateTimelineProgress() {
 			var rail = timeline.querySelector(".about-timeline__rail") || timeline;
@@ -848,9 +992,15 @@
 				document.documentElement.scrollHeight,
 				document.body ? document.body.scrollHeight : 0
 			);
-			var atBottom = window.scrollY + vh >= pageHeight - 24;
+			var scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+			var atTop = scrollTop <= 12;
+			var atBottom = !atTop && scrollTop + vh >= pageHeight - 24;
 			var pct = atBottom ? 1 : (line - rootRect.top) / rootRect.height;
+			if (atTop) {
+				pct = 0;
+			}
 
+			timeline.classList.toggle("is-at-start", atTop);
 			timeline.style.setProperty(
 				"--timeline-progress",
 				(Math.max(0, Math.min(1, pct)) * 100).toFixed(2) + "%"
@@ -864,7 +1014,7 @@
 			timelineEvents.forEach(function (event) {
 				var dot = event.querySelector(".about-timeline__dot");
 				var top = (dot || event).getBoundingClientRect().top;
-				var lit = atBottom || top <= line;
+				var lit = !atTop && (atBottom || top <= line);
 				event.classList.toggle("is-lit", lit);
 				if (lit) {
 					current = event;
@@ -893,55 +1043,12 @@
 				return;
 			}
 
-			function setEventOpen(el, isOpen) {
-				var button = el.querySelector(".about-timeline__topic");
-				var panel = el.querySelector(".about-timeline__card");
-				el.classList.toggle("is-open", isOpen);
-				if (button) {
-					button.setAttribute("aria-expanded", isOpen ? "true" : "false");
-				}
-				if (panel) {
-					if (isOpen) {
-						panel.removeAttribute("inert");
-					} else {
-						panel.setAttribute("inert", "");
-					}
-				}
-			}
-
-			var open = !item.classList.contains("is-open");
-			if (!open) {
-				setEventOpen(item, false);
+			if (item.classList.contains("is-open")) {
+				setTimelineEventOpen(item, false);
 				return;
 			}
 
-			var anchor = item.querySelector(".about-timeline__heading") || topic;
-			var before = anchor.getBoundingClientRect().top;
-
-			timeline.querySelectorAll(".about-timeline__event.is-open").forEach(function (el) {
-				if (el === item) {
-					return;
-				}
-				var panel = el.querySelector(".about-timeline__card");
-				if (panel) {
-					panel.classList.add("is-instant");
-				}
-				setEventOpen(el, false);
-				if (panel) {
-					panel.offsetHeight;
-					panel.classList.remove("is-instant");
-				}
-			});
-
-			var shift = anchor.getBoundingClientRect().top - before;
-			if (shift) {
-				window.scrollBy(0, shift);
-			}
-
-			setEventOpen(item, true);
-			window.requestAnimationFrame(function () {
-				anchor.scrollIntoView({ block: "start", behavior: "auto" });
-			});
+			openAboutTimelineEvent(item);
 		});
 	}
 
@@ -1021,20 +1128,43 @@
 			}
 		}
 
+		function openTocTarget(id) {
+			if (!id) {
+				return;
+			}
+			pinToc(id);
+			var target = document.getElementById(id);
+			if (target && target.classList.contains("about-timeline__event")) {
+				openAboutTimelineEvent(target);
+			}
+		}
+
 		toc.addEventListener("click", function (event) {
 			var link = event.target.closest('a[href^="#"]');
 			if (!link || !toc.contains(link)) {
 				return;
 			}
-			pinToc((link.getAttribute("href") || "").replace(/^#/, ""));
+
+			var id = (link.getAttribute("href") || "").replace(/^#/, "");
+			var target = id ? document.getElementById(id) : null;
+			if (target && target.classList.contains("about-timeline__event")) {
+				event.preventDefault();
+				openTocTarget(id);
+				if (history.replaceState) {
+					history.replaceState(null, "", "#" + id);
+				}
+				return;
+			}
+
+			pinToc(id);
 		});
 
 		window.addEventListener("hashchange", function () {
-			pinToc(window.location.hash.replace(/^#/, ""));
+			openTocTarget(window.location.hash.replace(/^#/, ""));
 		});
 
 		if (window.location.hash) {
-			pinToc(window.location.hash.replace(/^#/, ""));
+			openTocTarget(window.location.hash.replace(/^#/, ""));
 		}
 
 		window.addEventListener("scroll", updateToc, { passive: true });

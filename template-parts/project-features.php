@@ -46,9 +46,10 @@ $shot_index = 0;
 				'class'   => 'project-feature__image',
 				'alt'     => $feature['title'] ? $feature['title'] : '',
 				'loading' => 'eager',
+				'sizes'   => stillframe_feature_image_sizes(),
 			)
 		) : '';
-		$classes  = 'project-feature';
+		$classes  = 'project-feature glass-lift';
 		if ( $img && 1 === $index % 2 ) {
 			$classes .= ' project-feature--flip';
 		}
@@ -68,7 +69,7 @@ $shot_index = 0;
 				<?php ++$shot_index; ?>
 			<?php endif; ?>
 
-			<div class="project-feature__copy reveal" data-reveal>
+			<div class="project-feature__copy">
 				<?php if ( $feature['title'] ) : ?>
 					<h2 class="project-feature__title"><?php echo esc_html( $feature['title'] ); ?></h2>
 				<?php endif; ?>

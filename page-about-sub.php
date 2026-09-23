@@ -1,6 +1,6 @@
 <?php
 /**
- * Resume page — uploaded PDF or photo of the resume.
+ * About subpage — same contents list as About.
  *
  * @package Stillframe
  */
@@ -17,7 +17,7 @@ get_header();
 		$toc = stillframe_about_toc_items( get_the_ID() );
 		?>
 		<div class="page-glass">
-			<article <?php post_class( 'about about-subpage resume-page' ); ?>>
+			<article <?php post_class( 'about about-subpage' ); ?>>
 				<header class="about__top page-masthead reveal" data-reveal>
 					<?php
 					get_template_part(
@@ -40,22 +40,17 @@ get_header();
 				);
 				?>
 				<div class="about__body">
-					<?php if ( '' !== trim( (string) get_the_content() ) ) : ?>
-						<div class="about__copy">
-							<div class="prose is-awaiting-reveal">
-								<?php
-								echo stillframe_wrap_content_sections( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the_content
-									apply_filters( 'the_content', get_post()->post_content ),
-									2,
-									3,
-									get_the_ID()
-								);
-								?>
-							</div>
+					<div class="about__copy">
+						<div class="prose is-awaiting-reveal">
+							<?php
+							echo stillframe_wrap_content_sections( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the_content
+								apply_filters( 'the_content', get_post()->post_content ),
+								2,
+								3,
+								get_the_ID()
+							);
+							?>
 						</div>
-					<?php endif; ?>
-					<div class="glass-lift glass-lift--resume">
-						<?php get_template_part( 'template-parts/resume' ); ?>
 					</div>
 				</div>
 			</article>

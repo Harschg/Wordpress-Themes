@@ -60,8 +60,27 @@ $neighbors = stillframe_photograph_neighbors( get_the_ID() );
 			</figure>
 
 			<div class="photo-single__meta page-shell">
-				<header class="reveal" data-reveal>
-					<h1 class="page-header__title"><?php the_title(); ?></h1>
+				<header class="page-masthead reveal" data-reveal>
+					<?php
+					$photo_kicker     = __( 'Gallery', 'stillframe' );
+					$photo_kicker_url = get_post_type_archive_link( 'photograph' );
+					if ( $series && ! is_wp_error( $series ) && isset( $series[0] ) && $series[0] instanceof WP_Term ) {
+						$photo_kicker     = $series[0]->name;
+						$photo_kicker_url = get_term_link( $series[0] );
+						if ( is_wp_error( $photo_kicker_url ) ) {
+							$photo_kicker_url = get_post_type_archive_link( 'photograph' );
+						}
+					}
+					get_template_part(
+						'template-parts/page-masthead',
+						'',
+						array(
+							'title'      => get_the_title(),
+							'kicker'     => $photo_kicker,
+							'kicker_url' => $photo_kicker_url,
+						)
+					);
+					?>
 				</header>
 
 				<dl class="meta-list reveal" data-reveal>

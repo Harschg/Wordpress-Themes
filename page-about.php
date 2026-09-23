@@ -35,13 +35,22 @@ get_header();
 				'class'         => 'about__image',
 				'alt'           => get_the_title(),
 				'fetchpriority' => 'high',
+				'sizes'         => stillframe_feature_image_sizes(),
 			)
 		);
 		?>
 		<div class="page-glass">
 			<article <?php post_class( $events ? 'about about--timeline' : 'about' ); ?>>
-				<header class="about__top">
-					<h1 class="archive-header__title reveal" data-reveal><?php the_title(); ?></h1>
+				<header class="about__top page-masthead reveal" data-reveal>
+					<?php
+					get_template_part(
+						'template-parts/page-masthead',
+						'',
+						array(
+							'title' => get_the_title(),
+						)
+					);
+					?>
 				</header>
 				<?php if ( $toc ) : ?>
 					<nav class="about-toc" data-about-toc aria-label="<?php esc_attr_e( 'On this page', 'stillframe' ); ?>">

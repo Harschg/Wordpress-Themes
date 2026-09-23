@@ -24,11 +24,11 @@ if ( $arch ) {
 <article <?php post_class( $classes ); ?><?php echo $arch ? ' data-reveal' : ''; ?>>
 	<a class="photo-card__link" href="<?php the_permalink(); ?>">
 		<?php
-		$thumb = stillframe_get_card_image( get_the_ID(), 'stillframe-gallery', 'photo-card__image' );
+		$thumb = stillframe_get_card_image( get_the_ID(), 'photo-card__image' );
 		if ( $thumb ) :
 			?>
 			<div class="photo-card__media <?php echo $tall ? 'photo-card__media--tall' : ''; ?>">
-				<?php echo $thumb; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() ?>
+				<?php echo $thumb; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stillframe_get_card_image() ?>
 			</div>
 		<?php else : ?>
 			<div class="photo-card__media photo-card__media--empty"></div>

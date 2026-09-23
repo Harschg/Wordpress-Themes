@@ -14,8 +14,16 @@ get_header();
 	<div class="page-glass">
 	<div class="page-shell">
 		<?php if ( have_posts() ) : ?>
-			<header class="archive-header reveal" data-reveal>
-				<h1 class="archive-header__title"><?php esc_html_e( 'Posts', 'stillframe' ); ?></h1>
+			<header class="page-masthead reveal" data-reveal>
+				<?php
+				get_template_part(
+					'template-parts/page-masthead',
+					'',
+					array(
+						'title' => __( 'Posts', 'stillframe' ),
+					)
+				);
+				?>
 			</header>
 			<div class="post-list">
 				<?php

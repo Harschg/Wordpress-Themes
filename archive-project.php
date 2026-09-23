@@ -12,7 +12,17 @@ get_header();
 
 <main id="content" class="site-main">
 	<div class="page-glass">
-		<h1 class="archive-header__title reveal" data-reveal><?php esc_html_e( 'Projects', 'stillframe' ); ?></h1>
+		<header class="page-masthead reveal" data-reveal>
+			<?php
+			get_template_part(
+				'template-parts/page-masthead',
+				'',
+				array(
+					'title' => __( 'Projects', 'stillframe' ),
+				)
+			);
+			?>
+		</header>
 
 		<?php if ( have_posts() ) : ?>
 			<div class="project-grid">

@@ -27,6 +27,7 @@ if ( ! empty( $source['id'] ) ) {
 ?>
 <div class="page-world" aria-hidden="true">
 	<img
+		class="is-in"
 		src="<?php echo esc_url( $source['url'] ); ?>"
 		alt=""
 		width="<?php echo esc_attr( (string) $width ); ?>"

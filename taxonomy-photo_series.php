@@ -15,16 +15,19 @@ $term = get_queried_object();
 <main id="content" class="site-main">
 	<div class="page-glass">
 	<div class="page-shell page-shell--wide">
-		<header class="archive-header reveal" data-reveal>
-			<h1 class="archive-header__title"><?php echo esc_html( $term instanceof WP_Term ? $term->name : get_the_archive_title() ); ?></h1>
-			<?php if ( $term instanceof WP_Term && $term->description ) : ?>
-				<p class="archive-header__lede"><?php echo esc_html( $term->description ); ?></p>
-			<?php endif; ?>
-			<p class="archive-header__back">
-				<a class="text-link" href="<?php echo esc_url( get_post_type_archive_link( 'photograph' ) ); ?>">
-					← <?php esc_html_e( 'All photographs', 'stillframe' ); ?>
-				</a>
-			</p>
+		<header class="page-masthead reveal" data-reveal>
+			<?php
+			get_template_part(
+				'template-parts/page-masthead',
+				'',
+				array(
+					'title'      => $term instanceof WP_Term ? $term->name : get_the_archive_title(),
+					'kicker'     => __( 'Gallery', 'stillframe' ),
+					'kicker_url' => get_post_type_archive_link( 'photograph' ),
+					'lede'       => $term instanceof WP_Term ? (string) $term->description : '',
+				)
+			);
+			?>
 		</header>
 
 		<?php if ( have_posts() ) : ?>

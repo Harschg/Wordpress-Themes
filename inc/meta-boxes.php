@@ -56,6 +56,17 @@ function stillframe_add_meta_boxes( $post_type, $post ) {
 		);
 	}
 
+	if ( stillframe_page_uses_section_wrap( $post->ID ) ) {
+		add_meta_box(
+			'stillframe_join_sections',
+			__( 'Join sections', 'stillframe' ),
+			'stillframe_render_join_sections_meta_box',
+			$post_type,
+			'normal',
+			'default'
+		);
+	}
+
 	if ( 'page' !== $post_type ) {
 		return;
 	}
@@ -896,3 +907,106 @@ function stillframe_save_about_dropdown_meta( $post_id ) {
 	}
 }
 add_action( 'save_post', 'stillframe_save_about_dropdown_meta' );
+
+/**
+ * Checkboxes to keep selected headings in the same lifted card.
+ *
+ * @param WP_Post $post Current post.
+ */
+function stillframe_render_join_sections_meta_box( $post ) {
+	wp_nonce_field( 'stillframe_save_section_joins', 'stillframe_section_joins_nonce' );
+
+	$levels   = stillframe_section_wrap_levels( $post->ID );
+	$headings = stillframe_joinable_headings( $post->ID, $levels[0], $levels[1] );
+	$joined   = stillframe_joined_section_ids( $post->ID );
+	?>
+	<input type="hidden" name="stillframe_joined_sections_present" value="1" />
+	<p><?php esc_html_e( 'Checked headings stay in the same card as the one above. Nested headings already stay with their parent.', 'stillframe' ); ?></p>
+	<?php if ( count( $headings ) < 2 ) : ?>
+		<p class="description"><?php esc_html_e( 'Add at least two headings that start their own cards, then update the page to join them here.', 'stillframe' ); ?></p>
+		<?php
+		return;
+	endif;
+	?>
+	<ul style="margin:0;padding:0;list-style:none;">
+		<?php foreach ( $headings as $index => $heading ) : ?>
+			<li style="margin:0 0 0.5rem;">
+				<?php if ( 0 === $index ) : ?>
+					<strong><?php echo esc_html( $heading['title'] ); ?></strong>
+				<?php else : ?>
+					<label>
+						<input
+							type="checkbox"
+							name="stillframe_joined_sections[]"
+							value="<?php echo esc_attr( $heading['id'] ); ?>"
+							<?php checked( in_array( $heading['id'], $joined, true ) ); ?>
+						/>
+						<?php echo esc_html( $heading['title'] ); ?>
+						<span class="description"><?php esc_html_e( 'Keep with the section above', 'stillframe' ); ?></span>
+					</label>
+				<?php endif; ?>
+			</li>
+		<?php endforeach; ?>
+	</ul>
+	<?php
+}
+
+/**
+ * Save joined section heading ids.
+ *
+ * @param int $post_id Post ID.
+ */
+function stillframe_save_section_joins_meta( $post_id ) {
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;
+	}
+
+	if ( wp_is_post_revision( $post_id ) ) {
+		return;
+	}
+
+	if ( ! stillframe_page_uses_section_wrap( $post_id ) ) {
+		return;
+	}
+
+	if ( ! isset( $_POST['stillframe_section_joins_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['stillframe_section_joins_nonce'] ) ), 'stillframe_save_section_joins' ) ) {
+		return;
+	}
+
+	if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		return;
+	}
+
+	if ( ! isset( $_POST['stillframe_joined_sections_present'] ) ) {
+		return;
+	}
+
+	$levels   = stillframe_section_wrap_levels( $post_id );
+	$headings = stillframe_joinable_headings( $post_id, $levels[0], $levels[1] );
+	$allowed  = array();
+	foreach ( $headings as $index => $heading ) {
+		if ( 0 === $index ) {
+			continue;
+		}
+		$allowed[] = $heading['id'];
+	}
+
+	$ids = array();
+	if ( isset( $_POST['stillframe_joined_sections'] ) && is_array( $_POST['stillframe_joined_sections'] ) ) {
+		foreach ( wp_unslash( $_POST['stillframe_joined_sections'] ) as $id ) {
+			$id = sanitize_title( (string) $id );
+			if ( $id && in_array( $id, $allowed, true ) ) {
+				$ids[] = $id;
+			}
+		}
+	}
+
+	$ids = array_values( array_unique( $ids ) );
+
+	if ( $ids ) {
+		update_post_meta( $post_id, 'stillframe_joined_sections', $ids );
+	} else {
+		delete_post_meta( $post_id, 'stillframe_joined_sections' );
+	}
+}
+add_action( 'save_post', 'stillframe_save_section_joins_meta' );

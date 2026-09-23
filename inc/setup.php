@@ -39,13 +39,42 @@ function stillframe_setup() {
 	add_image_size( 'stillframe-gallery', 900, 1200, false );
 	add_image_size( 'stillframe-hero', 1920, 1280, false );
 	add_image_size( 'stillframe-world', 2560, 1707, false );
-	add_image_size( 'stillframe-card', 800, 600, true );
 
 	register_nav_menus( array(
 		'primary' => __( 'Primary', 'stillframe' ),
 	) );
 }
 add_action( 'after_setup_theme', 'stillframe_setup' );
+
+/**
+ * Per-image motion choices for About subpage photos.
+ *
+ * In the editor, select an image and use Styles: Tilt in, Slide in, or Fade in.
+ * Images with no style keep the tilt-in motion.
+ */
+function stillframe_register_image_motion_styles() {
+	$styles = array(
+		array(
+			'name'  => 'tilt-in',
+			'label' => __( 'Tilt in', 'stillframe' ),
+		),
+		array(
+			'name'  => 'slide-in',
+			'label' => __( 'Slide in', 'stillframe' ),
+		),
+		array(
+			'name'  => 'fade-in',
+			'label' => __( 'Fade in', 'stillframe' ),
+		),
+	);
+
+	foreach ( array( 'core/image', 'core/media-text' ) as $block ) {
+		foreach ( $styles as $style ) {
+			register_block_style( $block, $style );
+		}
+	}
+}
+add_action( 'init', 'stillframe_register_image_motion_styles' );
 
 /**
  * Keep more pixels on large background uploads.
@@ -72,8 +101,9 @@ add_filter( 'wp_editor_set_quality', 'stillframe_jpeg_quality' );
 /**
  * Do not emit srcset on the front end.
  *
- * WordPress lists every registered size. Missing stillframe-card / stillframe-gallery
- * files 404 and the browser shows a grey box instead of the photo.
+ * WordPress lists every registered size. Missing stillframe-gallery
+ * files 404 and the browser shows a grey box instead of the photo. Theme img tags
+ * pick a single existing file instead.
  *
  * @param array|false $sources Srcset candidates.
  * @return array|false
@@ -141,14 +171,6 @@ function stillframe_enqueue_assets() {
 		true
 	);
 
-	wp_localize_script(
-		'stillframe-theme',
-		'stillframeTheme',
-		array(
-			'homeUrl' => home_url( '/' ),
-		)
-	);
-
 	stillframe_enqueue_resume_pdf();
 }
 add_action( 'wp_enqueue_scripts', 'stillframe_enqueue_assets' );
@@ -190,40 +212,11 @@ function stillframe_enqueue_resume_pdf() {
 		true
 	);
 
-	$projects = array();
-	foreach (
-		get_posts(
-			array(
-				'post_type'      => 'project',
-				'post_status'    => 'publish',
-				'posts_per_page' => 30,
-				'orderby'        => 'title',
-				'order'          => 'ASC',
-			)
-		) as $project
-	) {
-		if ( ! $project instanceof WP_Post ) {
-			continue;
-		}
-
-		$projects[] = array(
-			'label' => $project->post_title,
-			'url'   => get_permalink( $project ),
-		);
-	}
-
 	wp_localize_script(
 		'stillframe-resume-pdf',
 		'stillframeResumePdf',
 		array(
 			'workerSrc' => $pdfjs . '/pdf.worker.min.js',
-			'about'     => stillframe_page_url( 'about' ),
-			'projects'  => get_post_type_archive_link( 'project' ),
-			'gallery'   => get_post_type_archive_link( 'photograph' ),
-			'contact'   => stillframe_page_url( 'contact' ),
-			'github'    => stillframe_contact_setting( 'stillframe_github' ),
-			'linkedin'  => stillframe_contact_setting( 'stillframe_linkedin', 'https://www.linkedin.com/in/grant-harsch' ),
-			'projectItems' => $projects,
 		)
 	);
 }
@@ -446,6 +439,11 @@ function stillframe_template_include( $template ) {
 
 	if ( stillframe_is_about_page( $page_id ) ) {
 		$found = locate_template( 'page-about.php' );
+		return $found ? $found : $template;
+	}
+
+	if ( stillframe_is_about_subpage( $page_id ) ) {
+		$found = locate_template( 'page-about-sub.php' );
 		return $found ? $found : $template;
 	}
 
