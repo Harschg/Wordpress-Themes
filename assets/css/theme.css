@@ -15,6 +15,16 @@
 	--wash-a: rgba(196, 163, 115, 0.1);
 	--wash-b: rgba(72, 56, 40, 0.16);
 	--shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+	/* Shared card surface — no 1px border (avoids corner hairlines). */
+	--card-radius: 1rem;
+	--card-glass-bg: color-mix(in srgb, var(--bg) 58%, transparent);
+	--card-panel-bg: color-mix(in srgb, var(--bg-card) 82%, transparent);
+	--card-shadow:
+		0 18px 40px rgba(0, 0, 0, 0.3),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	--card-shadow-hover:
+		0 16px 34px rgba(0, 0, 0, 0.28),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1);
 	--font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
 	--font-body: "Outfit", system-ui, sans-serif;
 	--ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -417,10 +427,10 @@ body.is-ready .page-loader {
 	margin: 0;
 	padding: 0.75rem;
 	list-style: none;
-	background: var(--bg-card);
-	border: 1px solid var(--line);
+	background: var(--card-panel-bg);
+	border: 0;
 	border-radius: 1.35rem;
-	box-shadow: var(--shadow);
+	box-shadow: var(--card-shadow);
 	opacity: 0;
 	visibility: hidden;
 	pointer-events: none;
@@ -575,8 +585,9 @@ body.is-ready .page-loader {
 }
 
 .home-intro__portrait--empty {
-	border: 1px solid var(--line);
-	background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+	border: 0;
+	background: var(--card-panel-bg);
+	box-shadow: var(--card-shadow);
 }
 
 .home-intro__image {
@@ -1164,30 +1175,23 @@ body.is-ready .page-loader {
 .about-timeline__card-clip {
 	min-height: 0;
 	overflow: hidden;
-	border-radius: 1rem;
-	background: color-mix(in srgb, var(--bg) 58%, transparent);
-	border: 1px solid color-mix(in srgb, #e7f2ff 32%, var(--line));
-	box-shadow:
-		0 18px 40px rgba(0, 0, 0, 0.3),
-		0 0 28px rgba(200, 226, 255, 0.14),
-		inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	border: 0;
+	border-radius: var(--card-radius);
+	background: var(--card-glass-bg);
+	box-shadow: var(--card-shadow);
 	backdrop-filter: blur(16px);
 	-webkit-backdrop-filter: blur(16px);
 	transform: perspective(820px) rotateX(var(--press-x, 0deg)) rotateY(var(--press-y, 0deg));
-	transition: transform 0.45s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+	transition: transform 0.45s var(--ease), box-shadow 0.5s var(--ease);
 }
 
 .about-timeline__card-clip.is-pressing {
-	transition: transform 0.12s ease-out, border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+	transition: transform 0.12s ease-out, box-shadow 0.5s var(--ease);
 }
 
 .about-timeline__card:hover .about-timeline__card-clip,
 .about-timeline__card:focus-visible .about-timeline__card-clip {
-	border-color: color-mix(in srgb, #e7f2ff 50%, var(--line));
-	box-shadow:
-		0 16px 34px rgba(0, 0, 0, 0.28),
-		0 0 28px rgba(200, 226, 255, 0.14),
-		inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	box-shadow: var(--card-shadow-hover);
 }
 
 .about-timeline__card:active .about-timeline__card-clip {
@@ -1411,9 +1415,10 @@ body.is-ready .page-loader {
 
 .contact__form-wrap {
 	padding: 1.75rem;
-	background: var(--bg-card);
-	border: 1px solid var(--line);
+	background: var(--card-panel-bg);
+	border: 0;
 	border-radius: 1.15rem;
+	box-shadow: var(--card-shadow);
 }
 
 .contact-form {
@@ -1476,19 +1481,19 @@ body.is-ready .page-loader {
 .contact-banner {
 	margin: 0 0 1.25rem;
 	padding: 0.85rem 1rem;
-	border: 1px solid var(--line);
+	border: 0;
 	border-radius: 0.9rem;
+	background: var(--card-panel-bg);
+	box-shadow: var(--card-shadow);
 	font-size: 0.95rem;
 	animation: banner-in 0.6s var(--ease);
 }
 
 .contact-banner--ok {
-	border-color: rgba(201, 163, 106, 0.45);
 	color: var(--accent-soft);
 }
 
 .contact-banner--err {
-	border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 	color: var(--accent-soft);
 }
 
@@ -1548,10 +1553,11 @@ body.is-ready .page-loader {
 	display: grid;
 	grid-template-columns: 11rem 1fr;
 	min-height: 10.5rem;
-	background: var(--bg-card);
-	border: 1px solid var(--line);
-	border-radius: 1rem;
-	transition: transform 0.45s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+	background: var(--card-panel-bg);
+	border: 0;
+	border-radius: var(--card-radius);
+	box-shadow: var(--card-shadow);
+	transition: transform 0.45s var(--ease), box-shadow 0.5s var(--ease);
 }
 
 .series-card.reveal {
@@ -1562,17 +1568,16 @@ body.is-ready .page-loader {
 .series-card.reveal.is-visible {
 	opacity: 1;
 	transform: perspective(820px) rotateX(var(--press-x, 0deg)) rotateY(var(--press-y, 0deg));
-	transition: opacity 0.8s var(--ease), transform 0.45s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+	transition: opacity 0.8s var(--ease), transform 0.45s var(--ease), box-shadow 0.5s var(--ease);
 }
 
 .series-card.is-pressing.reveal.is-visible {
-	transition: transform 0.12s ease-out, border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+	transition: transform 0.12s ease-out, box-shadow 0.5s var(--ease);
 }
 
 .series-card:hover,
 .series-card:focus-visible {
-	border-color: rgba(201, 163, 106, 0.45);
-	box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+	box-shadow: var(--card-shadow-hover);
 }
 
 .series-card:active,
@@ -1678,13 +1683,21 @@ body.is-ready .page-loader {
 	overflow: hidden;
 	background: var(--bg-card);
 	aspect-ratio: 4 / 5;
-	border-radius: 1rem;
+	border: 0;
+	border-radius: var(--card-radius);
+	box-shadow: var(--card-shadow);
 	transform: perspective(820px) rotateX(var(--press-x, 0deg)) rotateY(var(--press-y, 0deg));
-	transition: transform 0.45s var(--ease);
+	transition: transform 0.45s var(--ease), box-shadow 0.5s var(--ease);
+	backface-visibility: hidden;
 }
 
 .photo-card__media.is-pressing {
-	transition: transform 0.12s ease-out;
+	transition: transform 0.12s ease-out, box-shadow 0.5s var(--ease);
+}
+
+.photo-card__link:hover .photo-card__media,
+.photo-card__link:focus-visible .photo-card__media {
+	box-shadow: var(--card-shadow-hover);
 }
 
 .photo-card__media--tall {
@@ -1697,9 +1710,10 @@ body.is-ready .page-loader {
 
 .photo-card__image {
 	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
+	/* Slight bleed so tilted frames don’t show empty corner pixels. */
+	inset: -1px;
+	width: calc(100% + 2px);
+	height: calc(100% + 2px);
 	max-width: none;
 	object-fit: cover;
 	transition: filter 1.1s var(--ease);
@@ -1892,7 +1906,7 @@ body.is-ready .page-loader {
 	margin: 0 auto;
 	padding: 2rem 1.75rem 2.5rem;
 	background: color-mix(in srgb, var(--bg) 46%, transparent);
-	border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+	border: 0;
 	border-radius: 1.25rem;
 	box-shadow:
 		0 30px 80px rgba(0, 0, 0, 0.38),
@@ -1904,7 +1918,6 @@ body.is-ready .page-loader {
 .page-glass:has(.about-subpage) {
 	overflow: visible;
 	background: transparent;
-	border-color: transparent;
 	box-shadow: none;
 	backdrop-filter: none;
 	-webkit-backdrop-filter: none;
@@ -1915,9 +1928,9 @@ body.is-ready .page-loader {
 	position: absolute;
 	inset: 0;
 	z-index: 0;
+	border: 0;
 	border-radius: inherit;
 	background: color-mix(in srgb, var(--bg) 46%, transparent);
-	border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
 	box-shadow:
 		0 30px 80px rgba(0, 0, 0, 0.38),
 		inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -1938,12 +1951,10 @@ body.is-ready .page-loader {
 	overflow: visible;
 	margin: 0 0 1.15rem;
 	padding: 1.25rem var(--lift-pad-x) 1.4rem;
-	background: color-mix(in srgb, var(--bg-card) 82%, transparent);
-	border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
-	border-radius: 1.05rem;
-	box-shadow:
-		0 18px 38px rgba(0, 0, 0, 0.3),
-		inset 0 1px 0 rgba(255, 255, 255, 0.07);
+	background: var(--card-panel-bg);
+	border: 0;
+	border-radius: var(--card-radius);
+	box-shadow: var(--card-shadow);
 }
 
 .glass-lift > *:not(.reveal) {
@@ -2073,11 +2084,12 @@ body.is-ready .page-loader {
 
 .project-card {
 	margin: 0;
-	background: var(--bg-card);
-	border: 1px solid var(--line);
-	border-radius: 1rem;
+	background: var(--card-panel-bg);
+	border: 0;
+	border-radius: var(--card-radius);
 	overflow: hidden;
-	transition: transform 0.45s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+	box-shadow: var(--card-shadow);
+	transition: transform 0.45s var(--ease), box-shadow 0.5s var(--ease);
 }
 
 .project-card.reveal.is-visible {
@@ -2085,13 +2097,12 @@ body.is-ready .page-loader {
 }
 
 .project-card.is-pressing.reveal.is-visible {
-	transition: transform 0.12s ease-out, border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+	transition: transform 0.12s ease-out, box-shadow 0.5s var(--ease);
 }
 
 .project-card:hover,
 .project-card:focus-within {
-	border-color: rgba(201, 163, 106, 0.4);
-	box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+	box-shadow: var(--card-shadow-hover);
 }
 
 .project-card:active,
@@ -2305,18 +2316,19 @@ body.is-ready .page-loader {
 	padding: 0;
 	width: fit-content;
 	max-width: calc(100% * 2 / 3);
-	border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-	border-radius: 1rem;
+	border: 0;
+	border-radius: var(--card-radius);
 	overflow: hidden;
-	background: var(--bg-card);
+	background: var(--card-panel-bg);
+	box-shadow: var(--card-shadow);
 	color: inherit;
 	cursor: zoom-in;
-	transition: border-color 0.45s var(--ease);
+	transition: box-shadow 0.45s var(--ease);
 }
 
 .project-feature__media:hover,
 .project-feature__media:focus-visible {
-	border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+	box-shadow: var(--card-shadow-hover);
 	outline: none;
 }
 
