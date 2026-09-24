@@ -1,6 +1,9 @@
 <?php
 /**
- * Single project — case study layout.
+ * Individual project — case study layout.
+ *
+ * Loaded via single-project.php so WordPress hierarchy still resolves
+ * the `project` post type to this template.
  *
  * @package Stillframe
  */

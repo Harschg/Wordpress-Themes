@@ -22,7 +22,10 @@ $lede       = isset( $args['lede'] ) ? (string) $args['lede'] : '';
 <?php if ( $kicker ) : ?>
 	<p class="page-masthead__kicker">
 		<?php if ( $kicker_url ) : ?>
-			<a href="<?php echo esc_url( $kicker_url ); ?>"><?php echo esc_html( $kicker ); ?></a>
+			<a class="page-masthead__back" href="<?php echo esc_url( $kicker_url ); ?>">
+				<span class="page-masthead__back-arrow" aria-hidden="true">←</span>
+				<span class="page-masthead__back-label"><?php echo esc_html( $kicker ); ?></span>
+			</a>
 		<?php else : ?>
 			<?php echo esc_html( $kicker ); ?>
 		<?php endif; ?>
